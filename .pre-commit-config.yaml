@@ -1,0 +1,31 @@
+# Non-mutating gates only.
+#
+# Nothing here may rewrite a tracked file. pre-commit stashes unstaged changes
+# and restores them with `git apply`; a hook that mutates a tracked file inside
+# that window makes the restore conflict, which aborts the commit AND drops the
+# developer's uncommitted edits. The patch-version bump therefore lives in the
+# wrapper hook installed by scripts/install_hooks.sh, which runs AFTER
+# pre-commit exits and only when it succeeded.
+fail_fast: true
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-added-large-files
+        args: [--maxkb=2000]
+      - id: check-merge-conflict
+      - id: detect-private-key
+      - id: mixed-line-ending
+        args: [--fix=lf]
+
+  - repo: local
+    hooks:
+      - id: file-length
+        name: file length <= 250 lines
+        entry: scripts/check_file_length.sh
+        language: system

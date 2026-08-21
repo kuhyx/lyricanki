@@ -1,0 +1,28 @@
+{
+  "_comment": [
+    "Acceptance fixture for the card-count gate. Q8 forbids committing lyrics,",
+    "so this stores a HASH of the pinned lyrics plus the derived expectations --",
+    "never the lyric text. The test fetches LRCLIB, verifies the hash still",
+    "matches, and asserts the counts below.",
+    "If the hash mismatches, LRCLIB's stored text changed: re-measure and update",
+    "this file deliberately. Do not weaken the gate."
+  ],
+  "lrclib_id": 36856755,
+  "track": "Despacito",
+  "artist": "Luis Fonsi",
+  "duration_seconds": 273,
+  "plain_lyrics_sha256": "b1d540599a3fe61d065fc7028932638e45381525a0079fae7f0a8dbe3404e64c",
+  "measured_2026_08_21": {
+    "lines": 77,
+    "tokens": 472,
+    "unique_surface_forms": 183,
+    "unique_lemmas": 146
+  },
+  "expected_notes": 143,
+  "gloss_coverage_es_extract": {
+    "english_translation_direct": 113,
+    "real_words_needing_mt": 18,
+    "no_dictionary_data": ["dámelo"],
+    "note": "dámelo is an enclitic cluster (dar+me+lo) the forms table must decompose"
+  }
+}
