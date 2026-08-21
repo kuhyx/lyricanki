@@ -109,11 +109,11 @@ def resolve(surface: str, lookup: object) -> tuple[str, str, str] | None:
         raise TypeError("lookup must be callable")
     for stem, _ in split_enclitics(surface):
         rows = list(lookup(stem) or [])
-        if not rows:
-            continue
         for lemma, pos in rows:
             if pos == "verb":
                 return (stem, lemma, pos)
-        lemma, pos = rows[0]
-        return (stem, lemma, pos)
+    # No verb reading anywhere: refuse rather than card the noun. Only verbs
+    # take enclitic pronouns, so a non-verb match means the split was wrong --
+    # `dámelo` matches the proper noun "Dame", which would be a WRONG card,
+    # and a wrong card still passes a "gloss is non-empty" check.
     return None

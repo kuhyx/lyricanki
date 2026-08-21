@@ -1,9 +1,14 @@
 """Build a lyricanki dictionary pack from a kaikki.org extract.
 
-Input is ``downloads/<lang>-extract.jsonl.gz`` from
-``kaikki.org/dictionary/downloads/<lang>/`` -- the *current* path. The
-per-language bulk file ``kaikki.org-dictionary-<Language>.jsonl`` is marked
-deprecated upstream; do not switch to it.
+Two sources, merged by ``--extract`` being passed more than once:
+
+* ``kaikki.org-dictionary-Spanish.jsonl`` -- English Wiktionary's view of
+  Spanish words. Its sense glosses are already English ("gratis" -> "free,
+  without charge"), which is what a card back needs. Marked DEPRECATED
+  upstream, so snapshot it and record the date; if it disappears, fall back
+  to the current path plus machine translation, accepting worse glosses.
+* ``downloads/es/es-extract.jsonl.gz`` -- the current per-language path,
+  richer in inflected ``forms``.
 
 Never shipped: this is a developer tool that produces the SQLite pack the app
 downloads.
@@ -39,8 +44,9 @@ class BuildStats:
 
 
 def iter_entries(path: Path) -> Iterator[dict]:
-    """Yield each JSON entry from the gzipped kaikki extract at ``path``."""
-    with gzip.open(path, "rt", encoding="utf-8") as handle:
+    """Yield each JSON entry from a kaikki extract, gzipped or plain."""
+    opener = gzip.open if path.suffix == ".gz" else open
+    with opener(path, "rt", encoding="utf-8") as handle:
         for line in handle:
             line = line.strip()
             if line:
@@ -57,6 +63,50 @@ def english_glosses(entry: dict) -> list[str]:
         if word and word not in seen:
             seen.append(word)
     return seen
+
+
+def direct_glosses(entry: dict) -> list[str]:
+    """Return English definitions stated directly on ``entry``'s senses.
+
+    English Wiktionary defines Spanish headwords in English, so for that
+    source the sense glosses *are* the card back -- no translation step and
+    no MT. Inflection pointers ("plural of pie") are skipped: they describe a
+    form rather than defining the word.
+    """
+    out: list[str] = []
+    for sense in entry.get("senses") or []:
+        if _NON_LEMMA_TAGS & set(sense.get("tags") or []):
+            continue
+        for gloss in sense.get("glosses") or []:
+            text = gloss.strip()
+            if text and not _is_inflection_pointer(text) and text not in out:
+                out.append(text)
+    return out
+
+
+def _is_inflection_pointer(gloss: str) -> bool:
+    """Whether ``gloss`` merely points at another headword.
+
+    Only *pure* pointers are rejected -- "plural of pie" defines nothing on
+    its own. A gloss that names the relation and then gives the meaning
+    ("accusative of yo: me") is a real definition and must be kept, otherwise
+    the commonest pronouns in any song fall through to a worse source.
+    """
+    lowered = gloss.lower().strip()
+    if ":" in lowered or ";" in lowered:
+        return False
+    markers = (
+        "singular",
+        "plural",
+        "participle",
+        "indicative",
+        "subjunctive",
+        "imperative",
+        "gerund",
+        "feminine",
+        "masculine",
+    )
+    return " of " in lowered and any(m in lowered for m in markers)
 
 
 def source_gloss(entry: dict) -> str:
@@ -80,13 +130,73 @@ def is_lemma_entry(entry: dict) -> bool:
     return bool(entry.get("word")) and bool(entry.get("pos"))
 
 
+def _ingest(
+    source: Path,
+    senses: dict[tuple[str, str], tuple[str, str]],
+    forms: set[tuple[str, str, str, str]],
+    stats: BuildStats,
+    *,
+    defines_in_english: bool,
+) -> None:
+    """Merge one extract into ``senses`` and ``forms``.
+
+    ``defines_in_english`` marks a source whose sense glosses are written in
+    English (English Wiktionary's view of Spanish). Only such a source may
+    supply ``gloss_en``: the Spanish extract's senses are Spanish definitions,
+    and treating them as English produced cards reading "Corazón." for
+    *corazón*.
+    """
+    for entry in iter_entries(source):
+        stats.entries_read += 1
+        if not is_lemma_entry(entry):
+            continue
+        word = entry["word"]
+        pos = entry["pos"]
+
+        # Prefer a definition stated in English (English Wiktionary), then an
+        # English translation list (Spanish Wiktionary), then the
+        # source-language definition as a last resort.
+        direct = direct_glosses(entry) if defines_in_english else []
+        english = direct or english_glosses(entry)
+        src = "" if direct else source_gloss(entry)
+        if not english and not src:
+            continue
+
+        key = (word, pos)
+        existing_en, existing_src = senses.get(key, ("", ""))
+        candidate_en = "; ".join(english[:4])
+        # A gloss written IN English beats one merely carried alongside a
+        # Spanish definition: both sources define e.g. `me` as a pronoun, but
+        # only English Wiktionary's is readable on a card back.
+        if direct and candidate_en:
+            chosen_en = candidate_en
+        else:
+            chosen_en = existing_en or candidate_en
+        senses[key] = (chosen_en, existing_src or src)
+
+        # The headword is a form of itself, so a word that never inflects
+        # still resolves.
+        forms.add((word.lower(), word, pos, ""))
+        for form in entry.get("forms") or []:
+            surface = (form.get("form") or "").strip().lower()
+            if not surface or " " in surface:
+                continue
+            tags = ",".join(form.get("tags") or [])
+            forms.add((surface, word, pos, tags))
+
+
 def build(
-    extract: Path,
+    extracts: Path | list[Path],
     output: Path,
     language: str,
     pack_type: str = "whitespace",
 ) -> BuildStats:
-    """Build the pack at ``output`` from ``extract``; return its stats."""
+    """Build the pack at ``output`` from one or more ``extracts``.
+
+    Sources are merged in order and the first non-empty value wins, so pass
+    the English-definition source first and the form-rich source second.
+    """
+    sources = [extracts] if isinstance(extracts, Path) else list(extracts)
     if output.exists():
         output.unlink()
     stats = BuildStats()
@@ -96,34 +206,17 @@ def build(
         senses: dict[tuple[str, str], tuple[str, str]] = {}
         forms: set[tuple[str, str, str, str]] = set()
 
-        for entry in iter_entries(extract):
-            stats.entries_read += 1
-            if not is_lemma_entry(entry):
-                continue
-            word = entry["word"]
-            pos = entry["pos"]
-
-            english = english_glosses(entry)
-            src = source_gloss(entry)
-            if not english and not src:
-                continue
-
-            key = (word, pos)
-            existing = senses.get(key, ("", ""))
-            senses[key] = (
-                existing[0] or "; ".join(english[:4]),
-                existing[1] or src,
+        for index, source in enumerate(sources):
+            # The first source is the English-definition one by contract
+            # (see the module docstring); later sources only fill gaps and
+            # contribute inflected forms.
+            _ingest(
+                source,
+                senses,
+                forms,
+                stats,
+                defines_in_english=index == 0,
             )
-
-            # The headword is a form of itself, so a word that never inflects
-            # still resolves.
-            forms.add((word.lower(), word, pos, ""))
-            for form in entry.get("forms") or []:
-                surface = (form.get("form") or "").strip().lower()
-                if not surface or " " in surface:
-                    continue
-                tags = ",".join(form.get("tags") or [])
-                forms.add((surface, word, pos, tags))
 
         connection.executemany(
             "INSERT OR REPLACE INTO senses (lemma, pos, gloss_en, gloss_src) "
@@ -161,7 +254,10 @@ def build(
 def main() -> None:
     """Command-line entry point."""
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--extract", type=Path, required=True)
+    parser.add_argument(
+        "--extract", type=Path, required=True, action="append",
+        help="kaikki extract; repeat, English-definition source first",
+    )
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--language", required=True)
     parser.add_argument("--pack-type", default="whitespace")
