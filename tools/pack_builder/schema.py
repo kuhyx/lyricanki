@@ -20,11 +20,13 @@ CREATE TABLE meta (
 );
 
 -- surface form -> candidate lemmas. One row per (form, lemma, pos).
+-- No `tags` column: the inflection labels ("first-person,singular,present")
+-- cost 64MB of a 150MB pack and nothing in the pipeline reads them. The card
+-- shows the lemma's part of speech, not the form's morphology.
 CREATE TABLE forms (
     form  TEXT NOT NULL,
     lemma TEXT NOT NULL,
     pos   TEXT NOT NULL,
-    tags  TEXT NOT NULL DEFAULT '',
     PRIMARY KEY (form, lemma, pos)
 ) WITHOUT ROWID;
 
@@ -39,8 +41,9 @@ CREATE TABLE senses (
     PRIMARY KEY (lemma, pos)
 ) WITHOUT ROWID;
 
-CREATE INDEX idx_forms_form ON forms(form);
-CREATE INDEX idx_senses_lemma ON senses(lemma);
+-- No index on forms(form) or senses(lemma): both tables are WITHOUT ROWID
+-- with those columns leading the primary key, so the table IS the index. A
+-- separate one duplicated 37MB of a 82MB pack for no lookup benefit.
 """
 
 

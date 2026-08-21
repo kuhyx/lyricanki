@@ -1,0 +1,18 @@
+# Pack builder: a developer tool, never shipped with the app.
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.coverage.run]
+branch = true
+source = ["."]
+omit = ["tests/*"]
+
+[tool.coverage.report]
+fail_under = 100
+show_missing = true
+exclude_lines = [
+    "pragma: no cover",
+    # The module-level CLI guard cannot run while the module is imported.
+    'if __name__ == "__main__":',
+]

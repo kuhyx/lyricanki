@@ -24,12 +24,14 @@ from collections.abc import Iterator
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from glosses import (
+    direct_glosses,
+    english_glosses,
+    is_lemma_entry,
+    source_gloss,
+)
+from prune import prune
 from schema import create_schema, write_meta
-
-# Wiktionary marks non-lemma entries with these tags; carding them would
-# teach "vamos" as its own headword rather than as a form of "ir".
-_NON_LEMMA_TAGS = frozenset({"form-of", "inflection-of"})
-
 
 @dataclass
 class BuildStats:
@@ -53,87 +55,10 @@ def iter_entries(path: Path) -> Iterator[dict]:
                 yield json.loads(line)
 
 
-def english_glosses(entry: dict) -> list[str]:
-    """Return the English translations attached to ``entry``."""
-    seen: list[str] = []
-    for translation in entry.get("translations") or []:
-        if translation.get("lang_code") != "en":
-            continue
-        word = (translation.get("word") or "").strip()
-        if word and word not in seen:
-            seen.append(word)
-    return seen
-
-
-def direct_glosses(entry: dict) -> list[str]:
-    """Return English definitions stated directly on ``entry``'s senses.
-
-    English Wiktionary defines Spanish headwords in English, so for that
-    source the sense glosses *are* the card back -- no translation step and
-    no MT. Inflection pointers ("plural of pie") are skipped: they describe a
-    form rather than defining the word.
-    """
-    out: list[str] = []
-    for sense in entry.get("senses") or []:
-        if _NON_LEMMA_TAGS & set(sense.get("tags") or []):
-            continue
-        for gloss in sense.get("glosses") or []:
-            text = gloss.strip()
-            if text and not _is_inflection_pointer(text) and text not in out:
-                out.append(text)
-    return out
-
-
-def _is_inflection_pointer(gloss: str) -> bool:
-    """Whether ``gloss`` merely points at another headword.
-
-    Only *pure* pointers are rejected -- "plural of pie" defines nothing on
-    its own. A gloss that names the relation and then gives the meaning
-    ("accusative of yo: me") is a real definition and must be kept, otherwise
-    the commonest pronouns in any song fall through to a worse source.
-    """
-    lowered = gloss.lower().strip()
-    if ":" in lowered or ";" in lowered:
-        return False
-    markers = (
-        "singular",
-        "plural",
-        "participle",
-        "indicative",
-        "subjunctive",
-        "imperative",
-        "gerund",
-        "feminine",
-        "masculine",
-    )
-    return " of " in lowered and any(m in lowered for m in markers)
-
-
-def source_gloss(entry: dict) -> str:
-    """Return the first source-language definition in ``entry``."""
-    for sense in entry.get("senses") or []:
-        # Skip senses that only say "plural of X" -- those are inflection
-        # pointers, not definitions, and make a useless card back.
-        if _NON_LEMMA_TAGS & set(sense.get("tags") or []):
-            continue
-        for gloss in sense.get("glosses") or []:
-            if gloss.strip():
-                return gloss.strip()
-    return ""
-
-
-def is_lemma_entry(entry: dict) -> bool:
-    """Whether ``entry`` is a headword rather than an inflected form."""
-    tags = set(entry.get("tags") or [])
-    if _NON_LEMMA_TAGS & tags:
-        return False
-    return bool(entry.get("word")) and bool(entry.get("pos"))
-
-
 def _ingest(
     source: Path,
     senses: dict[tuple[str, str], tuple[str, str]],
-    forms: set[tuple[str, str, str, str]],
+    forms: set[tuple[str, str, str]],
     stats: BuildStats,
     *,
     defines_in_english: bool,
@@ -176,13 +101,12 @@ def _ingest(
 
         # The headword is a form of itself, so a word that never inflects
         # still resolves.
-        forms.add((word.lower(), word, pos, ""))
+        forms.add((word.lower(), word, pos))
         for form in entry.get("forms") or []:
             surface = (form.get("form") or "").strip().lower()
             if not surface or " " in surface:
                 continue
-            tags = ",".join(form.get("tags") or [])
-            forms.add((surface, word, pos, tags))
+            forms.add((surface, word, pos))
 
 
 def build(
@@ -204,7 +128,7 @@ def build(
     try:
         create_schema(connection)
         senses: dict[tuple[str, str], tuple[str, str]] = {}
-        forms: set[tuple[str, str, str, str]] = set()
+        forms: set[tuple[str, str, str]] = set()
 
         for index, source in enumerate(sources):
             # The first source is the English-definition one by contract
@@ -224,15 +148,20 @@ def build(
             [(w, p, en, src) for (w, p), (en, src) in senses.items()],
         )
         connection.executemany(
-            "INSERT OR REPLACE INTO forms (form, lemma, pos, tags) VALUES (?, ?, ?, ?)",
+            "INSERT OR REPLACE INTO forms (form, lemma, pos) VALUES (?, ?, ?)",
             sorted(forms),
         )
-        stats.lemmas_written = len(senses)
-        stats.forms_written = len(forms)
         stats.with_english = sum(1 for en, _ in senses.values() if en)
         stats.source_gloss_only = sum(
             1 for en, src in senses.values() if not en and src
         )
+        prune(connection)
+        stats.lemmas_written = connection.execute(
+            "SELECT COUNT(*) FROM senses"
+        ).fetchone()[0]
+        stats.forms_written = connection.execute(
+            "SELECT COUNT(*) FROM forms"
+        ).fetchone()[0]
         write_meta(
             connection,
             {

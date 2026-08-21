@@ -78,3 +78,41 @@ def test_resolve_returns_none_when_lookup_is_empty() -> None:
 def test_resolve_rejects_a_non_callable() -> None:
     with pytest.raises(TypeError):
         resolve("hacerlo", object())
+
+
+def test_split_tries_every_pronoun_before_giving_up() -> None:
+    """Exhausting the pronoun list must fall through, not hang or match."""
+    assert split_enclitics("corazon") == []
+
+
+def test_resolve_exhausts_all_splits_before_returning_none() -> None:
+    """`selo`/`se`/`lo` all match `dselo`; none resolves to a verb."""
+    assert resolve("dámeselo", lambda _s: [("X", "noun")]) is None
+
+
+def test_resolve_walks_every_candidate_row_of_a_split() -> None:
+    """A split whose rows hold no verb must keep trying later splits.
+
+    Two non-verb rows force the inner loop to run to completion rather than
+    returning on the first row.
+    """
+    assert resolve(
+        "hacerlo",
+        lambda s: [("a", "noun"), ("b", "adj")] if s == "hacer" else [],
+    ) is None
+
+
+def test_split_continues_past_a_pronoun_that_does_not_match() -> None:
+    """`bailalo` ends in `lo` but not `melo`; earlier misses must not stop."""
+    splits = split_enclitics("bailalo")
+    assert ("baila", "lo") in splits
+
+
+def test_split_does_not_repeat_an_identical_stem_and_pronoun() -> None:
+    """An unaccented stem equals its own de-accented variant.
+
+    `_candidate_stems` then yields the same string twice, and the second must
+    not be appended, or the caller looks the same stem up repeatedly.
+    """
+    splits = split_enclitics("hacerlo")
+    assert splits.count(("hacer", "lo")) == 1

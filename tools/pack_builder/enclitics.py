@@ -76,10 +76,10 @@ def split_enclitics(surface: str) -> list[tuple[str, str]]:
         # "los" would "split" into an empty stem.
         if len(stem) < 3:
             continue
-        for candidate in _candidate_stems(stem):
-            entry = (candidate, pronoun)
-            if entry not in results:
-                results.append(entry)
+        # No duplicate check is needed: `_candidate_stems` already
+        # de-duplicates, and each pronoun is visited once, so a (stem,
+        # pronoun) pair cannot repeat.
+        results.extend((c, pronoun) for c in _candidate_stems(stem))
     return results
 
 
