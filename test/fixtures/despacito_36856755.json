@@ -16,13 +16,32 @@
     "lines": 77,
     "tokens": 472,
     "unique_surface_forms": 183,
-    "unique_lemmas": 146
+    "resolved_lemmas": 148,
+    "lemmas_with_english_gloss": 148
   },
-  "expected_notes": 143,
-  "gloss_coverage_es_extract": {
-    "english_translation_direct": 113,
-    "real_words_needing_mt": 18,
-    "no_dictionary_data": ["dámelo"],
-    "note": "dámelo is an enclitic cluster (dar+me+lo) the forms table must decompose"
-  }
+  "expected_notes": 148,
+  "_expected_notes_note": [
+    "148, not the 143 estimated during planning. 143 came from simplemma plus a",
+    "wordfreq proxy; the app resolves through the pack's own forms table, which",
+    "is a different lemmatizer. 148 was measured end to end against the built",
+    "pack and live LRCLIB, and every one of the 148 carries a non-empty English",
+    "gloss -- so the 'zero empty glosses' half of the done condition holds at",
+    "the same number."
+  ],
+  "unresolved_surfaces": [
+    "bang",
+    "daddy",
+    "dididiri",
+    "fonsi",
+    "ohhh",
+    "woah",
+    "yeah"
+  ],
+  "_unresolved_note": [
+    "The 7 surfaces that resolve to no lemma are all non-Spanish: 4 ad-libs",
+    "(dididiri, fonsi, ohhh, woah) and 3 English loanwords (yeah, bang, daddy).",
+    "They are correctly absent from a Spanish vocabulary deck, so this list is",
+    "an assertion that the misses are the RIGHT misses -- if a real Spanish",
+    "word ever joins it, the pack regressed."
+  ]
 }
