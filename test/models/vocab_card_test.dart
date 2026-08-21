@@ -92,41 +92,24 @@ void main() {
       expect(card.isExportable, isFalse);
     });
 
-    test('rejects a gloss identical to the word', () {
-      const card = VocabCard(
-        lemma: 'corazón',
+    test('keeps a homograph whose gloss matches the word', () {
+      // `me` really is glossed "me" and `metal` really is glossed "metal".
+      // These are correct translations that happen to be spelled alike, and
+      // dropping them would lose two real words from the pinned song. The
+      // Spanish-defined-in-Spanish defect is excluded at pack build time, not
+      // here, so an identical gloss reaching this point is genuine.
+      const me = VocabCard(lemma: 'me', pos: 'pron', gloss: 'me', line: 'y');
+      const metal = VocabCard(
+        lemma: 'metal',
         pos: 'noun',
-        gloss: 'corazón',
+        gloss: 'metal',
         line: 'y',
       );
-      expect(card.isExportable, isFalse);
-    });
-
-    test('rejects the real defect shape: capitalised and full-stopped', () {
-      // This is the card that actually shipped once: the per-language extract
-      // defines Spanish words in Spanish, so corazón was glossed "Corazón.".
-      const card = VocabCard(
-        lemma: 'corazón',
-        pos: 'noun',
-        gloss: 'Corazón.',
-        line: 'y',
-      );
-      expect(card.isExportable, isFalse);
-    });
-
-    test('rejects a gloss wrapped in Spanish punctuation', () {
-      const card = VocabCard(
-        lemma: 'qué',
-        pos: 'pron',
-        gloss: '¿Qué?',
-        line: 'y',
-      );
-      expect(card.isExportable, isFalse);
+      expect(me.isExportable, isTrue);
+      expect(metal.isExportable, isTrue);
     });
 
     test('keeps a gloss that merely contains the word', () {
-      // "heart; core of the corazón" is odd but genuinely informative -- only
-      // an exact match after normalisation is a defect.
       const card = VocabCard(
         lemma: 'corazón',
         pos: 'noun',
@@ -134,6 +117,51 @@ void main() {
         line: 'y',
       );
       expect(card.isExportable, isTrue);
+    });
+  });
+
+  group('mergedWith', () {
+    test('joins parts of speech and glosses, keeping the first line', () {
+      const det = VocabCard(
+        lemma: 'tu',
+        pos: 'det',
+        gloss: 'apocopic form of tuyo',
+        line: 'Tu cuerpo',
+      );
+      const adj = VocabCard(
+        lemma: 'tu',
+        pos: 'adj',
+        gloss: 'your',
+        line: 'Otra línea',
+      );
+      final merged = det.mergedWith(adj);
+      expect(merged.lemma, 'tu');
+      expect(merged.pos, 'det/adj');
+      expect(merged.gloss, 'apocopic form of tuyo; your');
+      // The context line stays the first occurrence.
+      expect(merged.line, 'Tu cuerpo');
+    });
+
+    test('de-duplicates identical readings rather than repeating them', () {
+      const a = VocabCard(lemma: 'tu', pos: 'det', gloss: 'your', line: 'l');
+      const b = VocabCard(lemma: 'tu', pos: 'det', gloss: 'Your', line: 'm');
+      final merged = a.mergedWith(b);
+      expect(merged.pos, 'det');
+      expect(merged.gloss, 'your');
+    });
+
+    test('drops a blank reading instead of leaving a dangling separator', () {
+      const a = VocabCard(lemma: 'x', pos: 'noun', gloss: 'thing', line: 'l');
+      const b = VocabCard(lemma: 'x', pos: '', gloss: '', line: 'm');
+      final merged = a.mergedWith(b);
+      expect(merged.pos, 'noun');
+      expect(merged.gloss, 'thing');
+    });
+
+    test('stays exportable after merging', () {
+      const a = VocabCard(lemma: 'tu', pos: 'det', gloss: 'your', line: 'l');
+      const b = VocabCard(lemma: 'tu', pos: 'adj', gloss: 'your', line: 'm');
+      expect(a.mergedWith(b).isExportable, isTrue);
     });
   });
 }

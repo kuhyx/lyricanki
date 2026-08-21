@@ -16,17 +16,26 @@
     "lines": 77,
     "tokens": 472,
     "unique_surface_forms": 183,
-    "resolved_lemmas": 148,
-    "lemmas_with_english_gloss": 148
+    "resolved_lemma_pos_pairs": 148,
+    "unique_lemmas": 147
   },
-  "expected_notes": 148,
+  "expected_notes": 147,
   "_expected_notes_note": [
-    "148, not the 143 estimated during planning. 143 came from simplemma plus a",
-    "wordfreq proxy; the app resolves through the pack's own forms table, which",
-    "is a different lemmatizer. 148 was measured end to end against the built",
-    "pack and live LRCLIB, and every one of the 148 carries a non-empty English",
-    "gloss -- so the 'zero empty glosses' half of the done condition holds at",
-    "the same number."
+    "147 unique lemmas, measured end to end through the Dart pipeline against",
+    "the built pack and live LRCLIB -- not the 143 estimated during planning,",
+    "which came from simplemma plus a wordfreq proxy rather than the pack's own",
+    "forms table.",
+    "It is 147 and not 148 because `tu` resolves under two parts of speech (det",
+    "and adj, both meaning 'your'). Q19 keys the Anki guid on 'es|<lemma>', so",
+    "two notes for one lemma would collide on import and silently lose the",
+    "second reading; the builder therefore merges them into ONE card carrying",
+    "both. The pack builder's own count of 148 counts (lemma, pos) PAIRS, so",
+    "the two numbers describe different things and both are correct.",
+    "All 147 carry a non-empty English gloss.",
+    "Homographs are kept: `me` glosses to 'me' and `metal` to 'metal'. These",
+    "are correct translations that happen to be spelled alike, not the",
+    "Spanish-defined-in-Spanish defect -- that one is excluded at pack build",
+    "time, where gloss_en can only come from English Wiktionary."
   ],
   "unresolved_surfaces": [
     "bang",

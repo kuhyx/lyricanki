@@ -185,13 +185,8 @@ void main() {
   });
 
   group('export guard', () {
-    test('drops a card whose gloss equals the word', () {
-      const bad = VocabCard(
-        lemma: 'corazón',
-        pos: 'noun',
-        gloss: 'Corazón.',
-        line: 'x',
-      );
+    test('drops a card with no usable gloss', () {
+      const bad = VocabCard(lemma: 'x', pos: 'noun', gloss: '  ', line: 'y');
       expect(bad.isExportable, isFalse);
       final bytes = writer.build(cards: <VocabCard>[bad], deckName: 'D');
       final count = withCollection(
@@ -199,6 +194,16 @@ void main() {
         (db) => db.select('SELECT COUNT(*) c FROM notes').first['c'],
       );
       expect(count, 0);
+    });
+
+    test('writes a homograph whose gloss matches the word', () {
+      const me = VocabCard(lemma: 'me', pos: 'pron', gloss: 'me', line: 'y');
+      final bytes = writer.build(cards: <VocabCard>[me], deckName: 'D');
+      final flds = withCollection(
+        bytes,
+        (db) => db.select('SELECT flds FROM notes').first['flds'] as String,
+      );
+      expect(flds.split(fieldSeparator).first, 'me');
     });
 
     test('drops a card whose gloss is blank', () {
