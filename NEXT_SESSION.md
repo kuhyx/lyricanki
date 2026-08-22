@@ -23,6 +23,20 @@ The script builds, `adb install -r`s and pushes the pack. It refuses to run
 without the phone, and **never uninstalls, never `pm clear`s** — the app's
 data is not yours to wipe.
 
+**Expect a signature clash on the first install.** Every release APK built
+before commit `cf8529b` was debug-signed (the Gradle config still had
+Flutter's scaffolded TODO), so if a debug-signed lyricanki is already on the
+phone, `install -r` fails with `INSTALL_FAILED_UPDATE_INCOMPATIBLE`. On the
+emulator this was resolved by uninstalling — **do not do that on the
+phone without asking.** Check first:
+
+```bash
+adb -s 23181JEGR08034 shell dumpsys package com.kuhy.lyricanki | grep -m1 signatures
+```
+
+If the app was never installed on the phone, this is moot and a plain
+`install -r` works.
+
 ### If the phone is unavailable, use the emulator
 
 An AVD named `lyricanki_test` (Android 34, google_apis, x86_64) already
@@ -88,9 +102,14 @@ analyze clean, **252 tests, 711/711 lines (100%)**, every file under 250 lines.
 - **Desktop, end to end**: search → track `#36856755` → "Export 147 cards" →
   `.apkg` → imported into the **real `anki` library**: 147 notes, 0 empty
   glosses, 4 fields each; re-import leaves it at 147.
-- **Android, partial**: signed APK installs; `getExternalStorageDirectory()`
-  takes the Android branch and creates `files/packs/`; `adb push` side-loads
-  the 43 MB pack with no root and it survives a reboot; app reports "Ready".
+- **Android, partial**: the release-signed APK (`CN=kuhy`, verified with
+  apksigner) installs; `getExternalStorageDirectory()` takes the Android
+  branch and creates `files/packs/`; `adb push` side-loads the 43 MB pack
+  with no root and it survives a reboot; app reports "Ready".
+- **CI is green end to end**: `release-apk` builds, signs, verifies the
+  signature and publishes. `v1.0.15` is now the "Latest" release, which is
+  exactly the case `PackStore.packTag` guards — the pinned pack URL was
+  re-checked after that and still returns HTTP 200 / 44,974,080 bytes.
 
 ## Corrections — do not re-derive
 
@@ -133,5 +152,3 @@ analyze clean, **252 tests, 711/711 lines (100%)**, every file under 250 lines.
 
 - `testsAndMisc` commit `1d7271f0` bundles this repo's glyph work under
   another workstream's message and **was pushed**. Kuhy's call; leaving it.
-- `tools/pack_builder/.coverage` is tracked and keeps showing as modified.
-  It should probably be gitignored.
