@@ -50,7 +50,10 @@ validate_requirements() {
 build_and_install() {
     if [[ "$SKIP_BUILD" -eq 0 ]]; then
         echo "==> Building release APK"
-        (cd "$REPO_ROOT" && flutter build apk --release)
+        # Memory-capped: an unbounded build can freeze the whole desktop,
+        # which costs more than the build does.
+        (cd "$REPO_ROOT" &&
+            "$REPO_ROOT/scripts/capped_run.sh" flutter build apk --release)
     fi
     local apk="$REPO_ROOT/build/app/outputs/flutter-apk/app-release.apk"
     [[ -f "$apk" ]] || apk="$REPO_ROOT/build/app/outputs/flutter-apk/app-debug.apk"

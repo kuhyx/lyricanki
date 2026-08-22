@@ -1,7 +1,7 @@
 name: lyricanki
 description: "Turn song lyrics into an Anki vocabulary deck: every unique word, lemmatised, glossed from a real dictionary, with the lyric line it came from."
 publish_to: 'none'
-version: 1.0.9+1
+version: 1.0.10+1
 
 environment:
   sdk: ^3.12.2
