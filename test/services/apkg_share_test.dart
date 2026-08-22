@@ -29,7 +29,7 @@ void main() {
   });
 
   test('passes the deck to the platform share sheet', () async {
-    await const ApkgShare().shareApkg('/tmp/decks/Despacito.apkg');
+    await ApkgShare(isAndroid: true).shareApkg('/tmp/decks/Despacito.apkg');
 
     expect(calls, hasLength(1));
     final arguments = calls.single.arguments as Map<Object?, Object?>;
@@ -39,9 +39,21 @@ void main() {
   test('declares the apkg mime type, which is what routes it', () async {
     // AnkiDroid registers ACTION_SEND for application/apkg. Without the type
     // the deck falls through to generic handlers and AnkiDroid is not offered.
-    await const ApkgShare().shareApkg('/tmp/decks/Despacito.apkg');
+    await ApkgShare(isAndroid: true).shareApkg('/tmp/decks/Despacito.apkg');
 
     final arguments = calls.single.arguments as Map<Object?, Object?>;
     expect(arguments['mimeTypes'], <String>['application/apkg']);
   });
+
+  test(
+    'does not reach the platform on desktop, where it would throw',
+    () async {
+      // share_plus's Linux backend is a mailto: shim that throws
+      // UnimplementedError for any share carrying files. Calling it there would
+      // turn a working desktop export into a crash.
+      await ApkgShare(isAndroid: false).shareApkg('/tmp/decks/Despacito.apkg');
+
+      expect(calls, isEmpty);
+    },
+  );
 }

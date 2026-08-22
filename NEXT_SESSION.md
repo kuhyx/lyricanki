@@ -11,7 +11,9 @@ first — it is the approved plan and records every settled decision (Q1–Q21).
 
 The whole flow was walked on the real phone (Pixel 6a, Android 16 / SDK 36) on
 2026-08-22: install → pack → search → track → export → **import into
-AnkiDroid** → re-import. Desktop was already verified. Both halves are done.
+AnkiDroid** → re-import. Desktop was re-checked against the changed export
+path in the same session (search and "Export 147 cards" confirmed headlessly;
+the share guard confirmed against the real Linux plugin). Both halves are done.
 
 ## Two real bugs were found and fixed doing it
 
@@ -37,6 +39,13 @@ AnkiDroid** → re-import. Desktop was already verified. Both halves are done.
    picker cannot browse into `Android/data`, so the path alone is useless.
    AnkiDroid registers `ACTION_SEND` for `application/apkg`, so the sheet is
    the supported handoff.
+
+   **The share call is Android-only, deliberately.** share_plus's Linux
+   backend is a `mailto:` url_launcher shim that throws
+   `UnimplementedError: Sharing files not supported on Linux` for any share
+   carrying files — verified by calling the real plugin, not by reading it.
+   Calling it unconditionally would have traded an Android bug for a desktop
+   crash.
 
 ## Measured on the device, not inferred
 
@@ -78,10 +87,17 @@ AnkiDroid's all-files permission was granted with
 with `... default` if you want it back as it was. It had no collection before
 this session — the import created its first one.
 
+`scripts/phone_verify.sh` now delegates its build+install to
+`~/.claude/scripts/phone_deploy.sh`. It used to call `flutter build apk`
+directly with no `--build-number`, which produces versionCode 1: fine on a
+phone with nothing installed, but `INSTALL_FAILED_VERSION_DOWNGRADE` against
+any CI-installed APK (CI is at build 23). phone_deploy derives the number from
+what is actually on the device and caps it.
+
 ## State
 
 Pushed to `github.com/kuhyx/lyricanki` (public). `scripts/ci_mirror.sh` green:
-analyze clean, **262 tests, 730/730 lines (100%)**, every file under 250 lines.
+analyze clean, **263 tests, 731/731 lines (100%)**, every file under 250 lines.
 `tools/pack_builder`: 82 tests, 100% branch, no suppressions. Pack released as
 `pack-es-v1`; the pinned URL returns HTTP 200 / 44,974,080 bytes.
 
@@ -133,4 +149,11 @@ analyze clean, **262 tests, 730/730 lines (100%)**, every file under 250 lines.
 
 - `testsAndMisc` commit `1d7271f0` bundles this repo's glyph work under
   another workstream's message and **was pushed**. Kuhy's call; leaving it.
-- AnkiDroid's `MANAGE_EXTERNAL_STORAGE` grant is still in place (see above).
+- **AnkiDroid now holds a collection it did not have before**: one "Despacito"
+  deck, 147 notes, created by this session's verification. It was empty (never
+  opened) beforehand. This matters if AnkiWeb sync is ever set up: syncing a
+  non-empty local collection against an account forces a one-directional
+  choice, and picking "upload" would push this test deck over whatever is on
+  AnkiWeb. Delete the deck before connecting an account, or pick "download".
+- AnkiDroid's `MANAGE_EXTERNAL_STORAGE` grant is still in place; revert with
+  `adb shell appops set com.ichi2.anki MANAGE_EXTERNAL_STORAGE default`.

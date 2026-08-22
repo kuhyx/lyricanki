@@ -48,7 +48,7 @@ class _SongSearchScreenState extends State<SongSearchScreen> {
   late final PackStore _store = widget.store ?? PackStore();
   late final ExportDestination _destination =
       widget.destination ?? ExportDestination();
-  late final ApkgShare _share = widget.share ?? const ApkgShare();
+  late final ApkgShare _share = widget.share ?? ApkgShare();
   bool _packReady = false;
   bool _working = false;
   String? _status;

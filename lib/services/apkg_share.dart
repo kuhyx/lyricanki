@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:share_plus/share_plus.dart';
 
 /// Hands an exported `.apkg` to whatever app can import it.
@@ -15,10 +17,22 @@ import 'package:share_plus/share_plus.dart';
 /// handoff between the two apps.
 class ApkgShare {
   /// Creates a sharer.
-  const ApkgShare();
+  ///
+  /// [isAndroid] is only overridden by tests.
+  ApkgShare({bool? isAndroid}) : _isAndroid = isAndroid ?? Platform.isAndroid;
+
+  final bool _isAndroid;
 
   /// Offers the deck at [path] to other apps.
+  ///
+  /// **Android only, deliberately.** share_plus's Linux backend is a mailto:
+  /// url_launcher shim that throws `UnimplementedError('Sharing files not
+  /// supported on Linux')` for any share carrying files, so calling it
+  /// unconditionally would replace a working desktop export with a crash.
+  /// Desktop does not need it: the export lands in the documents directory,
+  /// which the user can open in a file manager and Anki can import.
   Future<void> shareApkg(String path) async {
+    if (!_isAndroid) return;
     await SharePlus.instance.share(
       ShareParams(
         // The mime type is what routes the file: AnkiDroid registers

@@ -48,18 +48,25 @@ validate_requirements() {
 }
 
 build_and_install() {
-    if [[ "$SKIP_BUILD" -eq 0 ]]; then
-        echo "==> Building release APK"
-        # Memory-capped: an unbounded build can freeze the whole desktop,
-        # which costs more than the build does.
-        (cd "$REPO_ROOT" &&
-            "$REPO_ROOT/scripts/capped_run.sh" flutter build apk --release)
-    fi
     local apk="$REPO_ROOT/build/app/outputs/flutter-apk/app-release.apk"
-    [[ -f "$apk" ]] || apk="$REPO_ROOT/build/app/outputs/flutter-apk/app-debug.apk"
 
-    echo "==> Installing (upgrade in place, data preserved)"
-    adb -s "$DEVICE" install -r "$apk"
+    if [[ "$SKIP_BUILD" -eq 1 ]]; then
+        [[ -f "$apk" ]] || apk="$REPO_ROOT/build/app/outputs/flutter-apk/app-debug.apk"
+        echo "==> Installing (upgrade in place, data preserved)"
+        adb -s "$DEVICE" install -r "$apk"
+        return
+    fi
+
+    # Delegate to phone_deploy.sh rather than calling `flutter build apk`
+    # directly. It derives --build-number from the versionCode actually on the
+    # phone, which this script did not: pubspec ships +1 while CI mints one
+    # build per commit, so a plain build produces versionCode 1 and
+    # `install -r` fails with INSTALL_FAILED_VERSION_DOWNGRADE against any
+    # CI-installed APK. It also caps the number so the local side cannot run
+    # away from CI, compares signers before building, and is memory-capped.
+    echo "==> Building and installing via phone_deploy.sh"
+    ADB_SERIAL="$DEVICE" bash "$HOME/.claude/scripts/phone_deploy.sh" \
+        "$REPO_ROOT" --release
 }
 
 push_pack() {
