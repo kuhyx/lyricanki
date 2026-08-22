@@ -1,3 +1,4 @@
+import 'package:lyricanki/models/vocab_card.dart';
 import 'package:meta/meta.dart';
 
 /// One song that was exported, as the history list shows it.
@@ -16,6 +17,8 @@ class ExportEntry {
     required this.cardCount,
     required this.exportedAt,
     required this.lyrics,
+    this.cards = const <VocabCard>[],
+    this.unresolved = const <String>[],
     this.hidden = false,
   });
 
@@ -50,6 +53,25 @@ class ExportEntry {
   /// plane, and LRCLIB is not consulted twice for a song already exported.
   /// A few KB per entry, against a deck that is hundreds of KB.
   final String lyrics;
+
+  /// The cards that were exported, as they were exported.
+  ///
+  /// Stored rather than re-derived so the detail screen can show the deck
+  /// offline and **without the dictionary pack** -- a rebuild needs the pack,
+  /// and this screen already has to cope with it being absent. It is also the
+  /// only honest record of what shipped: re-deriving would show what the deck
+  /// *would* be built as today, which differs whenever words were unticked or
+  /// the pack has since changed.
+  ///
+  /// Empty on records written before this field existed. Those fall back to
+  /// deriving from [lyrics], labelled as such.
+  final List<VocabCard> cards;
+
+  /// Surfaces the pack could not resolve at export time.
+  ///
+  /// Kept beside [cards] because "which words were dropped" is half the
+  /// answer to "what got exported".
+  final List<String> unresolved;
 
   /// Whether the user hid this row.
   ///

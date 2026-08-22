@@ -196,6 +196,10 @@ class _SongSearchScreenState extends State<SongSearchScreen>
       track: track,
       path: path,
       cardCount: session.selectedCount,
+      // Exactly the cards that shipped, so the detail screen shows the deck
+      // as exported rather than as it would rebuild today.
+      cards: session.selectedCards,
+      unresolved: session.unresolved,
     );
     refreshHistory();
     await _share.shareApkg(path);

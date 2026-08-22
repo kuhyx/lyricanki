@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:lyricanki/models/export_entry.dart';
+import 'package:lyricanki/models/vocab_card.dart';
+import 'package:lyricanki/widgets/vocab_card_tile.dart';
 
 /// What one exported song looks like up close: its stats, and what can be
 /// done with it.
@@ -21,6 +23,8 @@ class ExportDetailScreen extends StatelessWidget {
     required this.onHide,
     this.packReady = true,
     this.fileExists = _defaultFileExists,
+    this.derivedCards,
+    this.derivedUnresolved = const <String>[],
     super.key,
   });
 
@@ -45,6 +49,30 @@ class ExportDetailScreen extends StatelessWidget {
 
   /// Whether the `.apkg` is still on disk. Injectable for tests.
   final bool Function(String) fileExists;
+
+  /// Cards rebuilt from the stored lyrics, for entries exported before the
+  /// deck was recorded.
+  ///
+  /// Null when the dictionary pack is unavailable, which is the one case
+  /// where an old entry can show no word list at all. Never used when the
+  /// entry carries its own cards -- those are what actually shipped.
+  final List<VocabCard>? derivedCards;
+
+  /// Unresolved surfaces from the same rebuild. See [derivedCards].
+  final List<String> derivedUnresolved;
+
+  /// The cards to show, and whether they are the exported ones.
+  ///
+  /// Stored cards are the record of what shipped. Derived ones are a best
+  /// effort for older entries and are labelled as such, because unticked
+  /// words and pack updates both make them differ from the real deck.
+  bool get _hasStoredCards => entry.cards.isNotEmpty;
+
+  List<VocabCard> get _cards =>
+      _hasStoredCards ? entry.cards : (derivedCards ?? const <VocabCard>[]);
+
+  List<String> get _unresolved =>
+      _hasStoredCards ? entry.unresolved : derivedUnresolved;
 
   static bool _defaultFileExists(String path) => File(path).existsSync();
 
@@ -93,6 +121,17 @@ class ExportDetailScreen extends StatelessWidget {
                 'Download the dictionary pack to rebuild this deck.',
               ),
             ),
+          const SizedBox(height: AppSpacing.lg),
+          WordListHeader(
+            count: _cards.length,
+            exact: _hasStoredCards,
+            cardCount: entry.cardCount,
+            empty: _cards.isEmpty,
+          ),
+          // The same tile the review screen ticks before export, so this list
+          // reads identically to the one that was approved.
+          for (final card in _cards) VocabCardTile(card: card),
+          UnresolvedWordsNote(unresolved: _unresolved),
         ],
       ),
     );

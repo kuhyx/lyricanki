@@ -1,6 +1,7 @@
 import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:lyricanki/services/deck_session.dart';
+import 'package:lyricanki/widgets/vocab_card_tile.dart';
 
 /// Lists every candidate card and lets the user untick the ones they know.
 ///
@@ -72,18 +73,17 @@ class _ReviewScreenState extends State<ReviewScreen> {
                   itemCount: entries.length + 1,
                   itemBuilder: (context, index) {
                     if (index == entries.length) {
-                      return _UnresolvedNote(session: session);
+                      return UnresolvedWordsNote(
+                        unresolved: session.unresolved,
+                      );
                     }
                     final entry = entries[index];
-                    return CheckboxListTile(
-                      value: entry.selected,
-                      onChanged: (_) => session.toggle(index),
-                      title: Text('${entry.card.lemma}  ·  ${entry.card.pos}'),
-                      subtitle: Text(
-                        entry.card.gloss,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                    // The same tile the export detail screen renders, so the
+                    // list you approve looks like the list you exported.
+                    return VocabCardTile(
+                      card: entry.card,
+                      selected: entry.selected,
+                      onToggle: () => session.toggle(index),
                     );
                   },
                 ),
@@ -110,42 +110,6 @@ class _ReviewScreenState extends State<ReviewScreen> {
           ),
         );
       },
-    );
-  }
-}
-
-/// Footer naming the surfaces the pack could not resolve.
-///
-/// Surfaced rather than hidden: on the pinned song every one is an ad-lib or
-/// an English loanword, so a real Spanish word appearing here is a signal the
-/// pack regressed, not a detail to bury.
-class _UnresolvedNote extends StatelessWidget {
-  const _UnresolvedNote({required this.session});
-
-  final DeckSession session;
-
-  @override
-  Widget build(BuildContext context) {
-    if (session.unresolved.isEmpty) return const SizedBox.shrink();
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.all(AppSpacing.md),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          Text(
-            '${session.unresolved.length} words not in the dictionary',
-            style: theme.textTheme.titleSmall,
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            session.unresolved.join(', '),
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
-      ),
     );
   }
 }

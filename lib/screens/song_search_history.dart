@@ -6,6 +6,7 @@ import 'package:lyricanki/screens/export_detail_screen.dart';
 import 'package:lyricanki/screens/sync_screen.dart';
 import 'package:lyricanki/services/deck_session.dart';
 import 'package:lyricanki/services/export_history.dart';
+import 'package:lyricanki/services/pipeline/deck_builder.dart';
 
 /// The history half of the home screen: opening a row, hiding it, rebuilding
 /// its deck.
@@ -78,11 +79,26 @@ mixin SongSearchHistory<T extends StatefulWidget> on State<T> {
 
   /// Opens the detail screen for [entry].
   Future<void> openEntry(ExportEntry entry) async {
+    // Only for entries predating the stored deck: those have no word list
+    // unless one is derived, and deriving needs the pack off disk.
+    DeckDraft? derived;
+    if (entry.cards.isEmpty && packReady) {
+      final path = await packPath();
+      if (!mounted) return;
+      derived = draftFromLyrics(
+        packPath: path,
+        languageCode: languageCode,
+        lyrics: entry.lyrics,
+      );
+    }
+    if (!mounted) return;
     await Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
         builder: (_) => ExportDetailScreen(
           entry: entry,
           packReady: packReady,
+          derivedCards: derived?.cards,
+          derivedUnresolved: derived?.unresolved ?? const <String>[],
           onShare: () => shareApkg(entry.path),
           onRebuild: () => rebuild(entry),
           onHide: () => hide(entry),

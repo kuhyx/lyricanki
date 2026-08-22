@@ -3,6 +3,7 @@ import 'package:lyricanki/models/track.dart';
 import 'package:lyricanki/screens/review_screen.dart';
 import 'package:lyricanki/services/deck_session.dart';
 import 'package:lyricanki/services/pack/pack_reader.dart';
+import 'package:lyricanki/services/pipeline/deck_builder.dart';
 
 /// Builds a deck for [track] and shows the review screen for it.
 ///
@@ -34,4 +35,26 @@ Future<void> pushReview({
     ),
   );
   session.pack.close();
+}
+
+/// Rebuilds the deck for [lyrics] without showing anything.
+///
+/// For entries exported before the deck was recorded alongside them: the
+/// detail screen has a word list to show only if one can be derived. Opens
+/// and closes the pack itself, because nothing else here holds it open.
+///
+/// The result is *a* deck for these lyrics, not necessarily the deck that
+/// shipped -- unticked words are gone and the pack may have changed. The
+/// caller labels it accordingly.
+DeckDraft draftFromLyrics({
+  required String packPath,
+  required String languageCode,
+  required String lyrics,
+}) {
+  final pack = PackReader.open(packPath);
+  try {
+    return DeckBuilder(pack: pack, languageCode: languageCode).build(lyrics);
+  } finally {
+    pack.close();
+  }
 }
