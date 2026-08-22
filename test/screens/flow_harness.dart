@@ -30,6 +30,9 @@ class FakePathProvider extends PathProviderPlatform
 
   @override
   Future<String?> getApplicationDocumentsPath() async => root;
+
+  @override
+  Future<String?> getExternalStoragePath() async => root;
 }
 
 /// A track whose lyrics resolve against the shared test pack.

@@ -34,8 +34,21 @@ class PackStore {
       'https://github.com/kuhyx/lyricanki/releases/latest/download';
 
   /// Returns the directory packs live in, creating it when absent.
+  ///
+  /// **External app storage is preferred on Android.** It resolves to
+  /// `/sdcard/Android/data/<package>/files`, which `adb push` can write to and
+  /// the app can read with no runtime permission — so a 43 MB pack can be
+  /// side-loaded for on-device verification. The documents directory lives
+  /// under `/data/data`, which adb cannot write to without root, so using it
+  /// would make side-loading impossible.
+  ///
+  /// Falls back to the documents directory where external storage does not
+  /// exist, which covers desktop and iOS.
   Future<Directory> packDirectory() async {
-    final base = directoryOverride ?? await getApplicationDocumentsDirectory();
+    final base =
+        directoryOverride ??
+        await getExternalStorageDirectory() ??
+        await getApplicationDocumentsDirectory();
     final dir = Directory(p.join(base.path, 'packs'));
     if (!dir.existsSync()) {
       await dir.create(recursive: true);
