@@ -82,3 +82,58 @@ def is_lemma_entry(entry: dict) -> bool:
     if NON_LEMMA_TAGS & tags:
         return False
     return bool(entry.get("word")) and bool(entry.get("pos"))
+
+
+# A sense longer than this reads as an encyclopaedia entry rather than a card
+# back. Measured across the 125,481-lemma Spanish pack: only 80 lemmas have
+# any sense this long, and 8 exceed 300 characters. `gustar`'s first sense is
+# 334 characters of grammar commentary ("analyzable in structure as...",
+# "Compare similar structures in Italian piacere...") while its remaining
+# three senses are the actual translations.
+MAX_SENSE_CHARS = 200
+
+
+def split_senses(gloss: str) -> list[str]:
+    """Split a joined gloss on top-level ``"; "`` separators.
+
+    Parenthesised text is *not* split: place-name glosses embed semicolons
+    inside their parenthetical ("Danube (a river in Europe; flowing 2,850
+    kilometers...)"), and a naive ``str.split`` cuts mid-parenthetical and
+    leaves an unbalanced fragment reading "Danube (a river in Europe".
+    """
+    senses: list[str] = []
+    current: list[str] = []
+    depth = 0
+    index = 0
+    while index < len(gloss):
+        char = gloss[index]
+        if char == "(":
+            depth += 1
+        elif char == ")":
+            depth = max(0, depth - 1)
+        if depth == 0 and gloss.startswith("; ", index):
+            senses.append("".join(current))
+            current = []
+            index += 2
+            continue
+        current.append(char)
+        index += 1
+    if current:
+        senses.append("".join(current))
+    return senses
+
+
+def trim_long_senses(gloss: str) -> str:
+    """Drop senses too long to read on a card back.
+
+    Never returns empty: when *every* sense is over-long (49 lemmas, all
+    proper names) the shortest is kept, because dropping the last sense would
+    delete the card rather than shorten it.
+    """
+    senses = split_senses(gloss)
+    kept = [sense for sense in senses if len(sense) <= MAX_SENSE_CHARS]
+    if not kept:
+        if not senses:
+            return gloss
+        kept = [min(senses, key=len)]
+    return "; ".join(kept)

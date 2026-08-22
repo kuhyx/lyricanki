@@ -29,6 +29,7 @@ from glosses import (
     english_glosses,
     is_lemma_entry,
     source_gloss,
+    trim_long_senses,
 )
 from prune import prune
 from schema import create_schema, write_meta
@@ -89,7 +90,7 @@ def _ingest(
 
         key = (word, pos)
         existing_en, existing_src = senses.get(key, ("", ""))
-        candidate_en = "; ".join(english[:4])
+        candidate_en = trim_long_senses("; ".join(english[:4]))
         # A gloss written IN English beats one merely carried alongside a
         # Spanish definition: both sources define e.g. `me` as a pronoun, but
         # only English Wiktionary's is readable on a card back.

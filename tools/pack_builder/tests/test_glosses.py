@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 from glosses import (
+    MAX_SENSE_CHARS,
     direct_glosses,
     english_glosses,
     is_lemma_entry,
     source_gloss,
+    split_senses,
+    trim_long_senses,
 )
 
 
@@ -112,3 +115,51 @@ def test_source_gloss_exhausts_all_senses_without_a_definition() -> None:
         ]
     )
     assert source_gloss(entry) == ""
+
+
+class TestSplitSenses:
+    """``split_senses`` divides a joined gloss without breaking parentheses."""
+
+    def test_splits_on_top_level_separator(self) -> None:
+        assert split_senses("to run; to flow") == ["to run", "to flow"]
+
+    def test_keeps_semicolons_inside_parentheses(self) -> None:
+        # Danube's gloss embeds "; flowing 2,850 kilometers" inside its
+        # parenthetical; splitting there leaves "Danube (a river in Europe".
+        gloss = "Danube (a river in Europe; flowing far); a waltz"
+        assert split_senses(gloss) == [
+            "Danube (a river in Europe; flowing far)",
+            "a waltz",
+        ]
+
+    def test_empty_gloss_yields_no_senses(self) -> None:
+        assert split_senses("") == []
+
+    def test_unbalanced_closing_paren_does_not_go_negative(self) -> None:
+        # A stray ")" must not push depth below zero, which would make every
+        # later separator look nested and stop splitting entirely.
+        assert split_senses("a); b") == ["a)", "b"]
+
+
+class TestTrimLongSenses:
+    """``trim_long_senses`` drops encyclopaedic senses, never the card."""
+
+    def test_keeps_ordinary_glosses_unchanged(self) -> None:
+        assert trim_long_senses("love; love affair") == "love; love affair"
+
+    def test_drops_the_over_long_sense_and_keeps_the_rest(self) -> None:
+        # This is the `gustar` shape: a grammar essay followed by the real
+        # translations.
+        essay = "x" * (MAX_SENSE_CHARS + 1)
+        gloss = f"{essay}; to like romantically"
+        assert trim_long_senses(gloss) == "to like romantically"
+
+    def test_keeps_the_shortest_when_every_sense_is_long(self) -> None:
+        # 49 lemmas (all proper names) are entirely over-long; dropping the
+        # last sense would delete the card instead of shortening it.
+        longer = "y" * (MAX_SENSE_CHARS + 10)
+        shorter = "z" * (MAX_SENSE_CHARS + 1)
+        assert trim_long_senses(f"{longer}; {shorter}") == shorter
+
+    def test_empty_gloss_is_returned_unchanged(self) -> None:
+        assert trim_long_senses("") == ""
