@@ -8,11 +8,19 @@ import 'package:http/testing.dart';
 import 'package:lyricanki/screens/song_search_screen.dart';
 import 'package:lyricanki/services/lrclib_client.dart';
 import 'package:lyricanki/services/pack/pack_store.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'flow_harness.dart' show historyIn;
 
 void main() {
   late Directory root;
 
-  setUp(() => root = Directory.systemTemp.createTempSync('lyricanki_home'));
+  setUp(() {
+    root = Directory.systemTemp.createTempSync('lyricanki_home');
+    // The history log stamps its writes with a device id read from
+    // SharedPreferences, which has no binding under `flutter test`.
+    SharedPreferences.setMockInitialValues(<String, Object>{});
+  });
   tearDown(() => root.deleteSync(recursive: true));
 
   PackStore storeIn(Directory dir) => PackStore(
@@ -43,9 +51,16 @@ void main() {
   /// inside the test's fake-async zone -- without runAsync the pump never
   /// settles.
   Future<void> pump(WidgetTester tester, PackStore store) async {
+    // Rooted in the temp dir, so a test run never reads or writes the live
+    // history in the real documents directory.
+    final history = await tester.runAsync(() => historyIn(root));
     await tester.pumpWidget(
       MaterialApp(
-        home: SongSearchScreen(client: emptyClient(), store: store),
+        home: SongSearchScreen(
+          client: emptyClient(),
+          store: store,
+          history: history,
+        ),
       ),
     );
     await tester.runAsync(

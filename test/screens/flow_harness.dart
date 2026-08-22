@@ -8,10 +8,12 @@ import 'package:http/testing.dart';
 import 'package:lyricanki/screens/song_search_screen.dart';
 import 'package:lyricanki/services/apkg_share.dart';
 import 'package:lyricanki/services/export_destination.dart';
+import 'package:lyricanki/services/export_history.dart';
 import 'package:lyricanki/services/lrclib_client.dart';
 import 'package:lyricanki/services/pack/pack_store.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqlite3/sqlite3.dart';
 
 import '../services/pack/pack_reader_test.dart' show buildPack;
@@ -35,6 +37,11 @@ class FakePathProvider extends PathProviderPlatform
 
   @override
   Future<String?> getExternalStoragePath() async => root;
+
+  /// Where the export history lives. Faked alongside the others so a test
+  /// run never writes into the real per-app support directory.
+  @override
+  Future<String?> getApplicationSupportPath() async => root;
 }
 
 /// A track whose lyrics resolve against the shared test pack.
@@ -74,13 +81,26 @@ LrclibClient clientWithTrack() => LrclibClient(
 ///
 /// Real dart:io cannot complete inside the test's fake-async zone, so the
 /// settle has to happen inside [WidgetTester.runAsync].
+/// Opens a history rooted at [root], so a test never touches the live one.
+///
+/// The device id is fixed rather than generated: a test that asserts on the
+/// log's contents should not depend on a random uuid.
+Future<ExportHistory> historyIn(Directory root) =>
+    ExportHistory.open(deviceId: 'test-device', directoryOverride: root);
+
 Future<void> pumpHome(
   WidgetTester tester,
   PackStore store, {
   LrclibClient? client,
   ExportDestination? destination,
   ApkgShare? share,
+  ExportHistory? history,
+  Future<int?> Function(ExportHistory, String)? syncHistory,
 }) async {
+  // The screen resolves a device id for the history log through
+  // SharedPreferences, which has no binding under `flutter test`. Seeded here
+  // rather than in each suite's setUp so every caller of pumpHome is covered.
+  SharedPreferences.setMockInitialValues(<String, Object>{});
   await tester.pumpWidget(
     MaterialApp(
       home: SongSearchScreen(
@@ -90,6 +110,8 @@ Future<void> pumpHome(
         // The real one reaches the Android share sheet over a platform
         // channel, which throws MissingPluginException under flutter test.
         share: share ?? RecordingShare(),
+        history: history,
+        syncHistory: syncHistory,
       ),
     ),
   );

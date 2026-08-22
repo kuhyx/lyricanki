@@ -1,16 +1,20 @@
 import 'dart:async';
-import 'package:design_system/design_system.dart';
+import 'package:crdt_sync_flutter/crdt_sync_flutter.dart';
 import 'package:flutter/material.dart';
+import 'package:lyricanki/models/export_entry.dart';
 import 'package:lyricanki/models/track.dart';
+import 'package:lyricanki/screens/deck_flow.dart';
 import 'package:lyricanki/screens/pack_screen.dart';
-import 'package:lyricanki/screens/review_screen.dart';
+import 'package:lyricanki/screens/song_search_history.dart';
 import 'package:lyricanki/screens/track_picker_screen.dart';
 import 'package:lyricanki/services/apkg_share.dart';
 import 'package:lyricanki/services/deck_session.dart';
 import 'package:lyricanki/services/export_destination.dart';
+import 'package:lyricanki/services/export_history.dart';
+import 'package:lyricanki/services/history_sync.dart';
 import 'package:lyricanki/services/lrclib_client.dart';
-import 'package:lyricanki/services/pack/pack_reader.dart';
 import 'package:lyricanki/services/pack/pack_store.dart';
+import 'package:lyricanki/widgets/export_history_list.dart';
 
 /// Entry screen: check the pack is present, find a song, build a deck.
 class SongSearchScreen extends StatefulWidget {
@@ -20,6 +24,8 @@ class SongSearchScreen extends StatefulWidget {
     this.store,
     this.destination,
     this.share,
+    this.history,
+    this.syncHistory,
     this.language = 'es',
     super.key,
   });
@@ -36,6 +42,14 @@ class SongSearchScreen extends StatefulWidget {
   /// Hands the finished deck to another app; constructed when omitted.
   final ApkgShare? share;
 
+  /// The exported-song history; opened from the app support directory when
+  /// omitted. Injected by tests so a run never touches the live history.
+  final ExportHistory? history;
+
+  /// Merges the history with the other devices'. Injected by tests, which
+  /// must never reach the network or the OS keystore.
+  final Future<int?> Function(ExportHistory, String)? syncHistory;
+
   /// Language to build decks for.
   final String language;
 
@@ -43,12 +57,16 @@ class SongSearchScreen extends StatefulWidget {
   State<SongSearchScreen> createState() => _SongSearchScreenState();
 }
 
-class _SongSearchScreenState extends State<SongSearchScreen> {
+class _SongSearchScreenState extends State<SongSearchScreen>
+    with SongSearchHistory<SongSearchScreen> {
   late final LrclibClient _client = widget.client ?? LrclibClient();
   late final PackStore _store = widget.store ?? PackStore();
   late final ExportDestination _destination =
       widget.destination ?? ExportDestination();
   late final ApkgShare _share = widget.share ?? ApkgShare();
+  ExportHistory? _history;
+  String _deviceId = '';
+  List<ExportEntry> _entries = <ExportEntry>[];
   bool _packReady = false;
   bool _working = false;
   String? _status;
@@ -57,6 +75,7 @@ class _SongSearchScreenState extends State<SongSearchScreen> {
   void initState() {
     super.initState();
     unawaited(_refreshPack());
+    unawaited(_openHistory());
   }
 
   @override
@@ -64,6 +83,57 @@ class _SongSearchScreenState extends State<SongSearchScreen> {
     _client.close();
     _store.close();
     super.dispose();
+  }
+
+  @override
+  ExportHistory? get history => _history;
+
+  @override
+  bool get packReady => _packReady;
+
+  @override
+  String get languageCode => widget.language;
+
+  @override
+  Future<String> packPath() async =>
+      (await _store.packFile(widget.language)).path;
+
+  @override
+  Future<void> shareApkg(String path) => _share.shareApkg(path);
+
+  @override
+  Future<String> exportSession(DeckSession session, Track track) =>
+      _export(session, track);
+
+  @override
+  String get deviceId => _deviceId;
+
+  @override
+  Future<int?> runSync(ExportHistory store, String device) =>
+      (widget.syncHistory ?? _defaultSync)(store, device);
+
+  @override
+  void showStatus(String message) => setState(() => _status = message);
+
+  @override
+  void refreshHistory() {
+    final store = _history;
+    if (store == null) return;
+    setState(() => _entries = store.visible());
+  }
+
+  Future<void> _openHistory() async {
+    // The device id is what the CRDT log stamps its writes with, so it is
+    // resolved once here rather than per write.
+    final deviceId = (await loadDeviceIdentity()).deviceId;
+    final history =
+        widget.history ?? await ExportHistory.open(deviceId: deviceId);
+    if (!mounted) return;
+    setState(() {
+      _deviceId = deviceId;
+      _history = history;
+      _entries = history.visible();
+    });
   }
 
   Future<void> _refreshPack() async {
@@ -96,21 +166,15 @@ class _SongSearchScreenState extends State<SongSearchScreen> {
       // Lyrics come back empty from search on some rows, so the chosen track
       // is always re-fetched by id before its words are counted.
       final full = await _client.getById(track.id);
-      final packPath = (await _store.packFile(widget.language)).path;
-      final session = DeckSession(
-        pack: PackReader.open(packPath),
-        languageCode: widget.language,
-      )..load(full);
+      final path = await packPath();
       if (!mounted) return;
-      await Navigator.of(context).push<void>(
-        MaterialPageRoute<void>(
-          builder: (_) => ReviewScreen(
-            session: session,
-            onExport: () => _export(session, full),
-          ),
-        ),
+      await pushReview(
+        context: context,
+        packPath: path,
+        languageCode: widget.language,
+        track: full,
+        onExport: _export,
       );
-      session.pack.close();
     } on LrclibException catch (error) {
       if (mounted) setState(() => _status = error.message);
     } finally {
@@ -126,6 +190,14 @@ class _SongSearchScreenState extends State<SongSearchScreen> {
     // into Android/data, so a user following the old message had no way to
     // reach the file they had just exported. AnkiDroid registers ACTION_SEND
     // for application/apkg, so the share sheet lands directly in its importer.
+    // Recorded only now: doing it before the write would list a song whose
+    // export then failed.
+    await _history?.record(
+      track: track,
+      path: path,
+      cardCount: session.selectedCount,
+    );
+    refreshHistory();
     await _share.shareApkg(path);
     return 'Exported ${session.selectedCount} cards '
         '(${(bytes / 1024).round()} KB) to $path';
@@ -138,6 +210,11 @@ class _SongSearchScreenState extends State<SongSearchScreen> {
         title: const Text('lyricanki'),
         actions: <Widget>[
           IconButton(
+            icon: const Icon(Icons.sync),
+            tooltip: 'Sync history',
+            onPressed: _working ? null : syncNow,
+          ),
+          IconButton(
             icon: const Icon(Icons.storage_outlined),
             tooltip: 'Dictionary pack',
             onPressed: _openPackScreen,
@@ -146,23 +223,11 @@ class _SongSearchScreenState extends State<SongSearchScreen> {
       ),
       body: _working
           ? const Center(child: CircularProgressIndicator())
-          : Center(
-              child: _packReady
-                  ? EmptyState(
-                      icon: Icons.library_music_outlined,
-                      title: 'Ready',
-                      message:
-                          _status ??
-                          'Search for a song to build a vocabulary deck '
-                              'from every word in it.',
-                    )
-                  : const EmptyState(
-                      icon: Icons.storage_outlined,
-                      title: 'No dictionary yet',
-                      message:
-                          'Download the dictionary pack before building a '
-                          'deck. Tap the storage icon above.',
-                    ),
+          : HomeBody(
+              packReady: _packReady,
+              entries: _entries,
+              status: _status,
+              onOpen: openEntry,
             ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _packReady && !_working ? _pickAndBuild : null,
@@ -171,4 +236,8 @@ class _SongSearchScreenState extends State<SongSearchScreen> {
       ),
     );
   }
+
+  /// The production tick, reaching Firebase through the shared project.
+  static Future<int?> _defaultSync(ExportHistory history, String deviceId) =>
+      syncHistory(history: history, deviceId: deviceId);
 }

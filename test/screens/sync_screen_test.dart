@@ -1,0 +1,59 @@
+import 'dart:convert';
+
+import 'package:crdt_sync/crdt_sync.dart';
+import 'package:crdt_sync_flutter/crdt_sync_flutter.dart';
+import 'package:crdt_sync_flutter/testing/fake_secure_storage.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:lyricanki/screens/sync_screen.dart';
+import 'package:lyricanki/services/history_sync.dart';
+
+void main() {
+  testWidgets('builds its closures against the shared project', (
+    tester,
+  ) async {
+    // The fake ships with crdt_sync_flutter precisely so an app can exercise
+    // its own sync wiring without a platform channel. Without it every
+    // closure here throws MissingPluginException.
+    installFakeSecureStorage();
+
+    await tester.pumpWidget(const MaterialApp(home: SyncScreen()));
+    // Pumped, never settled: the screen probes the keystore behind an
+    // indeterminate progress indicator, and pumpAndSettle never returns
+    // while one animates.
+    await tester.pump();
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 50)),
+    );
+    await tester.pump();
+
+    // The probe ran and reported this device as not set up, which is the
+    // normal state before anyone signs in.
+    expect(find.byType(SyncScreen), findsOneWidget);
+  });
+
+  testWidgets('wires firebaseFactory to the shared project', (tester) async {
+    // Covers the factory closure without reaching the network: openSync only
+    // builds a client when a session is already stored, and a seeded refresh
+    // token is exactly that state. No sign-in round trip happens, so nothing
+    // leaves the machine.
+    installFakeSecureStorage(
+      initial: <String, String>{
+        SecureCredentialStore.defaultKey: jsonEncode(<String, String>{
+          'id_token': 'stub',
+          'refresh_token': 'stub',
+          'expires_at': DateTime.now()
+              .add(const Duration(hours: 1))
+              .toIso8601String(),
+        }),
+      },
+    );
+
+    final client = await SyncScreen.openClient();
+
+    expect(client, isNotNull, reason: 'a stored session is a signed-in device');
+    expect(await SyncScreen.probeSession(), isTrue);
+    expect(kSyncApp.project.databaseUrl, contains('europe-west1'));
+    client?.close();
+  });
+}
