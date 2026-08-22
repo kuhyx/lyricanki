@@ -35,12 +35,22 @@ adb -s emulator-5560 wait-for-device
 adb -s emulator-5560 shell getprop sys.boot_completed   # 1 when ready
 ```
 
-**Known blocker:** the emulator resolves DNS from the shell (`ping lrclib.net`
-works) but the app's Dart resolver gets `Failed host lookup: 'lrclib.net'`.
-Tried and failed: `-dns-server 8.8.8.8,1.1.1.1`, `setprop net.dns1/2` as
-root, app restarts. Untried: `-http-proxy`, a `-wipe-data` cold boot,
-`adb shell settings put global private_dns_mode off`. **Do not sink a
-session into this** — if two attempts fail, wait for the phone.
+**Known blocker — do not re-derive.** The emulator resolves DNS from the
+shell (`ping lrclib.net` works) but the app's Dart resolver gets
+`Failed host lookup: 'lrclib.net'`. The network is `VALIDATED` with
+`DnsAddresses: [ /fec0::3, /10.0.2.3 ]` — an IPv6 forwarder listed FIRST,
+which is the usual explanation for exactly this split (shell resolves over
+IPv4, apps try IPv6 and fail).
+
+Tried, all still failing: `-dns-server 8.8.8.8,1.1.1.1`; `setprop net.dns1`
+and `net.dns2` as root; `settings put global private_dns_mode off`;
+`sysctl -w net.ipv6.conf.{all,wlan0}.disable_ipv6=1`; app restarts between
+each. Untried: `-http-proxy`, a `-wipe-data` cold boot, an older system
+image, `-netdelay none -netspeed full`.
+
+**Do not sink a session into this.** The phone has working DNS and is the
+short path. Everything that does NOT need the network is already confirmed
+on the emulator, so what remains genuinely requires a working resolver.
 
 ## What to check on the device
 
