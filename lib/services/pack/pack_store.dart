@@ -17,10 +17,19 @@ typedef DownloadProgress = void Function(double? fraction);
 class PackStore {
   /// Creates a store, optionally over an injected [httpClient] and a fixed
   /// [directoryOverride] so tests never touch the real documents directory.
-  PackStore({http.Client? httpClient, this.directoryOverride})
-    : _http = httpClient ?? http.Client();
+  ///
+  /// [isAndroid] is injectable because the external-storage preference is
+  /// Android-only behaviour that must stay tested from a Linux test host.
+  PackStore({
+    http.Client? httpClient,
+    this.directoryOverride,
+    bool? isAndroid,
+  }) : _http = httpClient ?? http.Client(),
+       _isAndroid = isAndroid ?? Platform.isAndroid;
 
   final http.Client _http;
+
+  final bool _isAndroid;
 
   /// Base directory to use instead of the real documents directory.
   ///
@@ -54,10 +63,15 @@ class PackStore {
   ///
   /// Falls back to the documents directory where external storage does not
   /// exist, which covers desktop and iOS.
+  ///
+  /// The Android check is on the platform rather than on a null
+  /// return: `getExternalStorageDirectory()` is not merely absent off
+  /// Android, it *throws* `UnimplementedError`, so a `?? fallback` never runs
+  /// and the app crashes in `initState` before its first frame.
   Future<Directory> packDirectory() async {
     final base =
         directoryOverride ??
-        await getExternalStorageDirectory() ??
+        (_isAndroid ? await getExternalStorageDirectory() : null) ??
         await getApplicationDocumentsDirectory();
     final dir = Directory(p.join(base.path, 'packs'));
     if (!dir.existsSync()) {

@@ -26,6 +26,7 @@ void main() {
       );
       final store = PackStore(
         httpClient: MockClient((_) async => http.Response('', 200)),
+        isAndroid: true,
       );
       try {
         expect((await store.packDirectory()).path, startsWith(external.path));
@@ -45,6 +46,7 @@ void main() {
         );
         final store = PackStore(
           httpClient: MockClient((_) async => http.Response('', 200)),
+          isAndroid: true,
         );
         try {
           expect(
@@ -57,7 +59,44 @@ void main() {
         }
       },
     );
+
+    test('survives a platform whose external storage throws', () async {
+      // The desktop path_provider does not return null for external storage,
+      // it throws UnimplementedError. A `?? documents` fallback therefore
+      // never runs, and the app crashed in initState before its first frame.
+      // The mock above returns null, which is why this went unnoticed until
+      // the app was run on Linux.
+      final documents = Directory.systemTemp.createTempSync('docs');
+      PathProviderPlatform.instance = _ThrowingExternalPathProvider(
+        documentsPath: documents.path,
+      );
+      final store = PackStore(
+        httpClient: MockClient((_) async => http.Response('', 200)),
+        isAndroid: false,
+      );
+      try {
+        expect((await store.packDirectory()).path, startsWith(documents.path));
+      } finally {
+        store.close();
+        documents.deleteSync(recursive: true);
+      }
+    });
   });
+}
+
+/// Throws from external storage the way the real desktop implementation does.
+class _ThrowingExternalPathProvider extends PathProviderPlatform
+    with MockPlatformInterfaceMixin {
+  _ThrowingExternalPathProvider({required this.documentsPath});
+
+  final String documentsPath;
+
+  @override
+  Future<String?> getApplicationDocumentsPath() async => documentsPath;
+
+  @override
+  Future<String?> getExternalStoragePath() async =>
+      throw UnimplementedError('getExternalStoragePath() is Android-only.');
 }
 
 /// Reports external and documents paths separately, so the store's preference
