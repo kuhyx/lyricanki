@@ -10,9 +10,11 @@ import 'package:sync_settings_ui/sync_settings_ui.dart';
 /// is the whole of the app-side glue -- the ~390 lines each earlier app wrote
 /// by hand now live in that package.
 ///
-/// No Google button: `google_sign_in` is an Android/iOS/web plugin and this
-/// app also runs on Linux desktop, so sign-in here is email and password,
-/// which works everywhere.
+/// One tap on both platforms: Android goes through the `google_sign_in`
+/// plugin's account picker, and this app's real GTK desktop build -- which
+/// the plugin does not support at all -- goes through the OAuth loopback flow
+/// in the system browser. Email and password remain as the fallback, and as
+/// the machine credential for headless use.
 class SyncScreen extends StatelessWidget {
   /// Creates the screen.
   const SyncScreen({super.key});
@@ -28,12 +30,33 @@ class SyncScreen extends StatelessWidget {
   /// Whether this device already holds a session.
   static Future<bool> probeSession() => isSyncConfigured(kSyncApp);
 
+  /// Signs in through whichever Google flow this platform supports.
+  static Future<FirebaseRestClient?> connectWithGoogle() => signInWithGoogle(
+    kSyncApp,
+    tokenFetcher: () => googleAnyIdToken(
+      serverClientId: kServerClientId,
+      desktopClientId: kDesktopClientId,
+    ),
+  );
+
+  /// Whether to offer the Google button at all.
+  ///
+  /// Double-gated inside the shared package: the platform must ship a flow
+  /// *and* the matching client id must be compiled in. A visible control that
+  /// can never succeed is worse than no control.
+  static bool get googleSupported => googleAnySignInSupported(
+    serverClientId: kServerClientId,
+    desktopClientId: kDesktopClientId,
+  );
+
   @override
-  Widget build(BuildContext context) => const SyncSettingsScreen(
+  Widget build(BuildContext context) => SyncSettingsScreen(
     accountLoader: loadAccount,
     accountSaver: saveAccount,
     accountClearer: clearAccount,
     sessionProbe: probeSession,
     firebaseFactory: openClient,
+    googleFirebaseFactory: connectWithGoogle,
+    googleAvailable: googleSupported,
   );
 }

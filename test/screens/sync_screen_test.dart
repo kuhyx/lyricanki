@@ -56,4 +56,32 @@ void main() {
     expect(kSyncApp.project.databaseUrl, contains('europe-west1'));
     client?.close();
   });
+
+  testWidgets('offers Google only where a flow can actually succeed', (
+    tester,
+  ) async {
+    // Under `flutter test` the host is Linux, so the plugin half is out and
+    // the loopback half is live -- but kDesktopClientId is still empty, so
+    // nothing can succeed and the button must stay hidden. This is the trap
+    // the double gate exists for: a visible control that can never work.
+    expect(kDesktopClientId, isEmpty, reason: 'no Desktop client yet');
+    expect(SyncScreen.googleSupported, isFalse);
+  });
+
+  test('connectWithGoogle declines when no flow is configured', () async {
+    installFakeSecureStorage();
+
+    // Returns null without reaching a platform channel or a browser: the
+    // token fetcher short-circuits on the empty client ids, so
+    // signInWithGoogle never gets a token to exchange.
+    expect(await SyncScreen.connectWithGoogle(), isNull);
+  });
+
+  test('the Web client id is the one Firebase expects as the audience', () {
+    // An Android client id here yields a token rejected with
+    // `audience mismatch`, which surfaces as an indistinguishable
+    // "cancelled" -- so pin the shape rather than trusting the constant.
+    expect(kServerClientId, endsWith('.apps.googleusercontent.com'));
+    expect(kServerClientId, startsWith('845446124781-'));
+  });
 }

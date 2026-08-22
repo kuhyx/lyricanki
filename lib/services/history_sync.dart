@@ -25,6 +25,30 @@ const SyncApp kSyncApp = SyncApp(
   expectedUid: 'OvA2REQyLIhAHOEjzwS1o877rgG3',
 );
 
+/// The project's **Web** OAuth client id: the audience for the ID tokens the
+/// Android one-tap flow mints.
+///
+/// Public by design, exactly like [kSyncApp]'s `apiKey` -- it ships inside
+/// every APK, and the security rules, not its secrecy, protect the data.
+///
+/// A plain const rather than a `--dart-define`, deliberately: as a
+/// compile-time environment value it was empty in every build that mattered,
+/// because phone-deploy and CI both run a bare `flutter build apk --release`.
+/// That produced a visible Google button that always reported "cancelled".
+///
+/// An *Android* client id here yields a token Firebase rejects with
+/// `audience mismatch`; it must be the Web one.
+const String kServerClientId =
+    '845446124781-prdoherj0v64vc6egvvcp3l0693khaur.apps.googleusercontent.com';
+
+/// A **Desktop**-type OAuth client, for the loopback flow this app's real GTK
+/// build uses -- `google_sign_in` has no Linux implementation.
+///
+/// Empty until the Desktop client is registered in the console. While it is
+/// empty `googleAnySignInSupported` reports false on desktop, so the button
+/// stays hidden there rather than appearing and failing.
+const String kDesktopClientId = '';
+
 /// Where this app's logs live in the shared database.
 const String kSyncPathPrefix = 'lyricanki-sync/devices';
 
