@@ -1,4 +1,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- The app itself needs the network at runtime: lyrics come from
+         LRCLIB and the dictionary pack is downloaded over HTTPS. Flutter's
+         scaffold only declares this in the debug and profile manifests, so
+         without it here every release build ships unable to reach the
+         network and fails with "Failed host lookup" — which reads exactly
+         like a broken DNS resolver, and was misdiagnosed as one. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:label="lyricanki"
         android:name="${applicationName}"

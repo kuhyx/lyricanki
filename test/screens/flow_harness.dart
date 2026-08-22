@@ -6,6 +6,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:lyricanki/screens/song_search_screen.dart';
+import 'package:lyricanki/services/apkg_share.dart';
+import 'package:lyricanki/services/export_destination.dart';
 import 'package:lyricanki/services/lrclib_client.dart';
 import 'package:lyricanki/services/pack/pack_store.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
@@ -76,12 +78,18 @@ Future<void> pumpHome(
   WidgetTester tester,
   PackStore store, {
   LrclibClient? client,
+  ExportDestination? destination,
+  ApkgShare? share,
 }) async {
   await tester.pumpWidget(
     MaterialApp(
       home: SongSearchScreen(
         client: client ?? clientWithTrack(),
         store: store,
+        destination: destination,
+        // The real one reaches the Android share sheet over a platform
+        // channel, which throws MissingPluginException under flutter test.
+        share: share ?? RecordingShare(),
       ),
     ),
   );
@@ -120,4 +128,13 @@ Future<void> pickTrack(WidgetTester tester) async {
       ),
     ),
   );
+}
+
+/// Records what was shared instead of reaching the platform channel.
+class RecordingShare implements ApkgShare {
+  /// Paths passed to [shareApkg], in call order.
+  final List<String> shared = <String>[];
+
+  @override
+  Future<void> shareApkg(String path) async => shared.add(path);
 }

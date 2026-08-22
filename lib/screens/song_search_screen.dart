@@ -5,12 +5,12 @@ import 'package:lyricanki/models/track.dart';
 import 'package:lyricanki/screens/pack_screen.dart';
 import 'package:lyricanki/screens/review_screen.dart';
 import 'package:lyricanki/screens/track_picker_screen.dart';
+import 'package:lyricanki/services/apkg_share.dart';
 import 'package:lyricanki/services/deck_session.dart';
+import 'package:lyricanki/services/export_destination.dart';
 import 'package:lyricanki/services/lrclib_client.dart';
 import 'package:lyricanki/services/pack/pack_reader.dart';
 import 'package:lyricanki/services/pack/pack_store.dart';
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 
 /// Entry screen: check the pack is present, find a song, build a deck.
 class SongSearchScreen extends StatefulWidget {
@@ -18,6 +18,8 @@ class SongSearchScreen extends StatefulWidget {
   const SongSearchScreen({
     this.client,
     this.store,
+    this.destination,
+    this.share,
     this.language = 'es',
     super.key,
   });
@@ -27,6 +29,12 @@ class SongSearchScreen extends StatefulWidget {
 
   /// Pack store; constructed when omitted.
   final PackStore? store;
+
+  /// Where exports are written; constructed when omitted.
+  final ExportDestination? destination;
+
+  /// Hands the finished deck to another app; constructed when omitted.
+  final ApkgShare? share;
 
   /// Language to build decks for.
   final String language;
@@ -38,6 +46,9 @@ class SongSearchScreen extends StatefulWidget {
 class _SongSearchScreenState extends State<SongSearchScreen> {
   late final LrclibClient _client = widget.client ?? LrclibClient();
   late final PackStore _store = widget.store ?? PackStore();
+  late final ExportDestination _destination =
+      widget.destination ?? ExportDestination();
+  late final ApkgShare _share = widget.share ?? const ApkgShare();
   bool _packReady = false;
   bool _working = false;
   String? _status;
@@ -108,10 +119,14 @@ class _SongSearchScreenState extends State<SongSearchScreen> {
   }
 
   Future<String> _export(DeckSession session, Track track) async {
-    final dir = await getApplicationDocumentsDirectory();
-    final name = track.name.replaceAll(RegExp('[^A-Za-z0-9]+'), '_');
-    final path = p.join(dir.path, '$name.apkg');
+    final path = await _destination.pathFor(track.name);
     final bytes = await session.export(path);
+    // Offer the file straight to AnkiDroid. Writing it and naming the path is
+    // not enough on Android: from API 30 the storage picker cannot browse
+    // into Android/data, so a user following the old message had no way to
+    // reach the file they had just exported. AnkiDroid registers ACTION_SEND
+    // for application/apkg, so the share sheet lands directly in its importer.
+    await _share.shareApkg(path);
     return 'Exported ${session.selectedCount} cards '
         '(${(bytes / 1024).round()} KB) to $path';
   }

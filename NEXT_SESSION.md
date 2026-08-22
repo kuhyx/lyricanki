@@ -7,109 +7,83 @@ Paste everything below the line into a fresh Claude session with cwd `~/lyricank
 Work on `~/lyricanki`. Read `/home/kuhy/.claude/plans/learn-language-through-the-zany-boole.md`
 first — it is the approved plan and records every settled decision (Q1–Q21).
 
-## The one thing left: verify the app on Android
+## Android is verified. There is no known blocker.
 
-Everything else is built, green, pushed and released. Desktop is fully
-verified end to end; the Android half is verified only as far as the network.
+The whole flow was walked on the real phone (Pixel 6a, Android 16 / SDK 36) on
+2026-08-22: install → pack → search → track → export → **import into
+AnkiDroid** → re-import. Desktop was already verified. Both halves are done.
 
-### If the phone is connected (preferred — it has working DNS)
+## Two real bugs were found and fixed doing it
 
-```bash
-adb devices          # expect 23181JEGR08034
-bash scripts/phone_verify.sh
-```
+1. **The release APK had no INTERNET permission.** Flutter's scaffold declares
+   it only in `android/app/src/{debug,profile}/AndroidManifest.xml`, so every
+   release build shipped unable to reach the network and failed with
+   `Failed host lookup: 'lrclib.net'`. It is now in `main/AndroidManifest.xml`.
 
-The script builds, `adb install -r`s and pushes the pack. It refuses to run
-without the phone, and **never uninstalls, never `pm clear`s** — the app's
-data is not yours to wipe.
+   **This was the "emulator DNS blocker" the previous handoff described.** It
+   was never an emulator problem, and the untried fixes listed there
+   (`-http-proxy`, `-wipe-data`, an older image) would all have failed. The
+   phone's shell resolved `lrclib.net` fine while the app could not — the same
+   split, from the same cause. Reproduced on the phone with the old APK, gone
+   with the new one.
 
-**Expect a signature clash on the first install.** Every release APK built
-before commit `cf8529b` was debug-signed (the Gradle config still had
-Flutter's scaffolded TODO), so if a debug-signed lyricanki is already on the
-phone, `install -r` fails with `INSTALL_FAILED_UPDATE_INCOMPATIBLE`. On the
-emulator this was resolved by uninstalling — **do not do that on the
-phone without asking.** Check first:
+2. **Exports were written where nothing could read them.**
+   `getApplicationDocumentsDirectory()` is `/data/user/0/<pkg>/app_flutter` on
+   Android: app-private, invisible to AnkiDroid, unreachable by `adb pull`
+   without root. The export succeeded and was then unreachable by the only app
+   it exists to feed. Exports now go to `files/exports` in external app
+   storage (`lib/services/export_destination.dart`) **and** are handed to a
+   share sheet (`lib/services/apkg_share.dart`) — from API 30 the storage
+   picker cannot browse into `Android/data`, so the path alone is useless.
+   AnkiDroid registers `ACTION_SEND` for `application/apkg`, so the sheet is
+   the supported handoff.
 
-```bash
-adb -s 23181JEGR08034 shell dumpsys package com.kuhy.lyricanki | grep -m1 signatures
-```
+## Measured on the device, not inferred
 
-If the app was never installed on the phone, this is moot and a plain
-`install -r` works.
+- Search returns real LRCLIB results; `#36856755` (Luis Fonsi, 4:33) is there.
+- The review screen offers **Export 147 cards** — the expected count.
+- The exported file pulled off the phone: **147 notes, 0 empty fields, 4
+  fields each**, and importing it into the real desktop `anki` library gives
+  147, with a re-import leaving it at 147.
+- **In AnkiDroid**: first import added 146 notes (a stray tap had unticked
+  `ey`); re-importing the corrected 147-card file reported *"147 notes found,
+  1 new, 146 used to update existing"* and left **one** Despacito deck. That
+  is the dedup guarantee, on-device, against a collection that already held
+  the notes.
 
-### If the phone is unavailable, use the emulator
+## What also had to change, outside this repo
 
-An AVD named `lyricanki_test` (Android 34, google_apis, x86_64) already
-exists. Boot it **headless — never open a window on the user's monitors**:
+`com.kuhy.lyricanki` was missing from the Focus Owner allowlist, so it
+installed `installed=true hidden=true`: absent from the launcher and from
+`pm list packages`, with `am start` reporting the activity did not exist. It
+is fixed in `testsAndMisc` commit `98ca3ac5` (config.sh + regenerated
+policy.json). **A new `com.kuhy.*` app will hit this again** — the symptom
+looks like a broken install and is not one.
 
-```bash
-~/Android/Sdk/emulator/emulator -avd lyricanki_test -no-window -no-audio \
-  -no-boot-anim -gpu swiftshader_indirect -port 5560 &
-adb -s emulator-5560 wait-for-device
-adb -s emulator-5560 shell getprop sys.boot_completed   # 1 when ready
-```
+`~/testsAndMisc/phone_focus_mode/deploy.sh` is for the old *rooted* phone and
+fails with "Could not get root shell". The Pixel is unrooted under Device
+Owner; the policy ships as a bundled asset, so a whitelist change means
+regenerating `policy.json` and reinstalling `focus_owner`.
 
-**Known blocker — do not re-derive.** The emulator resolves DNS from the
-shell (`ping lrclib.net` works) but the app's Dart resolver gets
-`Failed host lookup: 'lrclib.net'`. The network is `VALIDATED` with
-`DnsAddresses: [ /fec0::3, /10.0.2.3 ]` — an IPv6 forwarder listed FIRST,
-which is the usual explanation for exactly this split (shell resolves over
-IPv4, apps try IPv6 and fail).
+## If you touch focus_owner
 
-Tried, all still failing: `-dns-server 8.8.8.8,1.1.1.1`; `setprop net.dns1`
-and `net.dns2` as root; `settings put global private_dns_mode off`;
-`sysctl -w net.ipv6.conf.{all,wlan0}.disable_ipv6=1`; app restarts between
-each. Untried: `-http-proxy`, a `-wipe-data` cold boot, an older system
-image, `-netdelay none -netspeed full`.
+Its signer must match the installed APK or the installer wants to uninstall —
+and Device Owner **cannot be re-provisioned on an unrooted Pixel without a
+factory reset**. Compare `keytool -list` against `apksigner verify` before
+building, pull the live APK as a rollback first, and use
+`~/.claude/scripts/phone_deploy.sh`, which does the signer check for you.
 
-**Do not sink a session into this.** The phone has working DNS and is the
-short path. Everything that does NOT need the network is already confirmed
-on the emulator, so what remains genuinely requires a working resolver.
+AnkiDroid's all-files permission was granted with
+`adb shell appops set com.ichi2.anki MANAGE_EXTERNAL_STORAGE allow`; revert
+with `... default` if you want it back as it was. It had no collection before
+this session — the import created its first one.
 
-## What to check on the device
-
-Install, side-load the pack, then walk the app:
-
-```bash
-adb -s <device> install -r build/app/outputs/flutter-apk/app-release.apk
-adb -s <device> push tools/pack_builder/lyricanki-es.sqlite \
-  /sdcard/Android/data/com.kuhy.lyricanki/files/packs/
-```
-
-1. Open lyricanki — the dictionary must report **installed / "Ready"**.
-2. Search "Despacito", select **`#36856755`** (Luis Fonsi, 4:33) — *not*
-   `#36844210`, the Bieber remix with English verses.
-3. Review screen must offer **Export 147 cards**. Export.
-4. Import into **AnkiDroid**: expect **exactly 147 notes**, each with
-   word / POS / gloss / lyric line, **zero** empty glosses.
-5. **Re-import the same file — still 147, no duplicates.**
-
-Steps 1 and the side-load are already confirmed on the emulator. Steps 2–5
-are confirmed on desktop against the real `anki` library, never on Android.
-
-Drive the emulator with `adb shell input tap X Y` at **1080x2400** — the
-screencap is downscaled 2x, so screenshot coordinates must be doubled. Tap
-the field before `input text`, or the text goes nowhere.
-
-## State: verified, not assumed
+## State
 
 Pushed to `github.com/kuhyx/lyricanki` (public). `scripts/ci_mirror.sh` green:
-analyze clean, **252 tests, 711/711 lines (100%)**, every file under 250 lines.
-`tools/pack_builder`: **82 tests, 100% branch**, no suppressions.
-
-- **Pack released** as `pack-es-v1`. The URL the app actually requests was
-  checked: HTTP 200, 44,974,080 bytes.
-- **Desktop, end to end**: search → track `#36856755` → "Export 147 cards" →
-  `.apkg` → imported into the **real `anki` library**: 147 notes, 0 empty
-  glosses, 4 fields each; re-import leaves it at 147.
-- **Android, partial**: the release-signed APK (`CN=kuhy`, verified with
-  apksigner) installs; `getExternalStorageDirectory()` takes the Android
-  branch and creates `files/packs/`; `adb push` side-loads the 43 MB pack
-  with no root and it survives a reboot; app reports "Ready".
-- **CI is green end to end**: `release-apk` builds, signs, verifies the
-  signature and publishes. `v1.0.15` is now the "Latest" release, which is
-  exactly the case `PackStore.packTag` guards — the pinned pack URL was
-  re-checked after that and still returns HTTP 200 / 44,974,080 bytes.
+analyze clean, **262 tests, 730/730 lines (100%)**, every file under 250 lines.
+`tools/pack_builder`: 82 tests, 100% branch, no suppressions. Pack released as
+`pack-es-v1`; the pinned URL returns HTTP 200 / 44,974,080 bytes.
 
 ## Corrections — do not re-derive
 
@@ -127,28 +101,36 @@ analyze clean, **252 tests, 711/711 lines (100%)**, every file under 250 lines.
    lemma with a known base and nearly all are false positives (`albita` is
    not a small `albo`). 437 corrupted entries to fix 1 card of 147 is a bad
    trade. 8 of the song's 9 diminutives are already correct.
+6. **`share_plus` drops `fileNameOverrides`** on this path — the channel
+   receives only `paths` and `mimeTypes`. Don't re-add it; the mime type is
+   what routes the file to AnkiDroid.
 
 ## Standing rules that bit, hard
 
-- **Never open a GUI on the user's monitors.** Not the primary, not the
-  secondary. It steals focus and interrupts their work — they said so twice.
-  Use `scripts/run_headless.sh` (Xvfb + xdotool), which is how the desktop
-  verification above was done with zero windows on their screens.
-- **Wrap builds in `scripts/capped_run.sh`.** The desktop had to be
-  power-cycled mid-session; cause unproven, but an unbounded build takes the
-  whole session down before the OOM killer acts.
+- **Never open a GUI on the user's monitors.** Use `scripts/run_headless.sh`
+  (Xvfb + xdotool).
+- **Wrap builds in `scripts/capped_run.sh`** (or use `phone_deploy.sh`).
 - **Check for a live Steam game before launching anything GPU-bound.**
-- **250-line cap applies to tests and prose too.**
+- **250-line cap applies to tests and prose too.** Adding one line to
+  `testsAndMisc/phone_focus_mode/config.sh` pushed it to 251 and blocked the
+  commit.
 - **Branch coverage, `fail_under = 100`, no suppressions.**
 - **Real `dart:io` deadlocks `testWidgets`** — use `tester.runAsync` or keep
   setup synchronous. `test/screens/flow_harness.dart` wraps it.
 - **`pumpAndSettle` never returns while an indeterminate progress bar
   animates.**
-- **Verify before claiming.** Three agreed acceptance numbers (≥150, 143,
-  148) were each wrong on measurement, and the mock that returned `null`
-  where the real platform *throws* hid a crash that shipped.
+- **Driving the phone by tap is error-prone**: screenshots are downscaled 2x,
+  so double the coordinates, and a stray tap silently unticked a card and
+  turned 147 into 146. Verify the count on screen before exporting.
+- **`phone_deploy.sh` can exit 0 while the build failed** — the task
+  notification said success and the APK was 20 minutes stale. Read the log
+  tail for `exit 34`, or check the APK's mtime.
+- **Verify before claiming.** Three agreed acceptance numbers (≥150, 143, 148)
+  were each wrong on measurement, and the previous session's confident DNS
+  diagnosis was a missing manifest line.
 
 ## Open, non-blocking
 
 - `testsAndMisc` commit `1d7271f0` bundles this repo's glyph work under
   another workstream's message and **was pushed**. Kuhy's call; leaving it.
+- AnkiDroid's `MANAGE_EXTERNAL_STORAGE` grant is still in place (see above).

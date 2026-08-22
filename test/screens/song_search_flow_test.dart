@@ -37,9 +37,12 @@ void main() {
       settleMs: 200,
     );
 
-    // A real .apkg must land in the documents directory, not just a message.
+    // A real .apkg must land on disk, not just a message. It goes in an
+    // `exports/` subdirectory: on Android that sits in external app storage,
+    // which is reachable by the share sheet and by adb, unlike the app-private
+    // documents directory the export originally used.
     final written = root
-        .listSync()
+        .listSync(recursive: true)
         .whereType<File>()
         .where((f) => f.path.endsWith('.apkg'))
         .toList();
@@ -92,6 +95,29 @@ void main() {
       settleMs: 200,
     );
     expect(find.textContaining('Exported ${before - 1} cards'), findsOneWidget);
+    store.close();
+  });
+
+  testWidgets('hands the exported deck to another app', (tester) async {
+    // Writing the file is not enough on Android: from API 30 the storage
+    // picker cannot browse into Android/data, so without the share sheet the
+    // user has no way to reach the deck they just exported. AnkiDroid
+    // registers ACTION_SEND for application/apkg.
+    writePack('${root.path}/packs/lyricanki-es.sqlite');
+    final store = storeIn(root);
+    final share = RecordingShare();
+    await pumpHome(tester, store, share: share);
+    await pickTrack(tester);
+
+    await actAsync(
+      tester,
+      () => tester.tap(find.byType(FilledButton)),
+      settleMs: 200,
+    );
+
+    expect(share.shared, hasLength(1));
+    expect(share.shared.single, endsWith('Despacito.apkg'));
+    expect(File(share.shared.single).existsSync(), isTrue);
     store.close();
   });
 }
