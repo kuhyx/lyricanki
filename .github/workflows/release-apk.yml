@@ -123,7 +123,7 @@ jobs:
         id: art
         run: |
           set -euo pipefail
-          out="habit-stack-${{ steps.ver.outputs.semver }}-build.${{ steps.vc.outputs.code }}.apk"
+          out="lyricanki-${{ steps.ver.outputs.semver }}-build.${{ steps.vc.outputs.code }}.apk"
           cp build/app/outputs/flutter-apk/app-release.apk "$out"
           echo "path=$out" >> "$GITHUB_OUTPUT"
 

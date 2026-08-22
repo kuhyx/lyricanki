@@ -53,9 +53,10 @@ Future<void> main(List<String> args) async {
   final unresolved = draft.unresolved.toList()..sort();
   final expected = (fixture['unresolved_surfaces'] as List).cast<String>();
 
-  stdout.writeln('cards      : ${draft.cards.length}');
-  stdout.writeln('empty gloss: ${empty.length}');
-  stdout.writeln('unresolved : ${unresolved.length} $unresolved');
+  stdout
+    ..writeln('cards      : ${draft.cards.length}')
+    ..writeln('empty gloss: ${empty.length}')
+    ..writeln('unresolved : ${unresolved.length} $unresolved');
 
   var ok = true;
   if (draft.cards.length != fixture['expected_notes']) {

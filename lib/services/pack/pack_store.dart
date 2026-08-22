@@ -30,8 +30,18 @@ class PackStore {
 
   /// Where packs are published. Release assets are free and unmetered for a
   /// public repo, so no server is operated for this.
+  ///
+  /// **The pack tag is pinned; this must not be `releases/latest`.**
+  /// `release-apk.yml` publishes a non-prerelease `vX.Y.Z` on every push to
+  /// main, and GitHub resolves `latest` to the newest non-prerelease — so
+  /// `latest/download` would point at an APK release holding no `.sqlite`
+  /// and every pack download would 404. Bump this tag when a new pack is
+  /// published.
+  static const String packTag = 'pack-es-v1';
+
+  /// Base directory the pack is downloaded from.
   static const String releaseBase =
-      'https://github.com/kuhyx/lyricanki/releases/latest/download';
+      'https://github.com/kuhyx/lyricanki/releases/download/$packTag';
 
   /// Returns the directory packs live in, creating it when absent.
   ///
