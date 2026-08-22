@@ -668,11 +668,11 @@ packages:
     dependency: "direct main"
     description:
       path: sync_settings_ui
-      ref: "sync_settings_ui-v0.2.0"
-      resolved-ref: "6802e9c0dabc527799a01989e188382f209aa3ad"
+      ref: "sync_settings_ui-v0.3.0"
+      resolved-ref: db3d8f827fd9f1a2fc513eef91a6025802b7fba3
       url: "https://github.com/kuhyx/utils"
     source: git
-    version: "0.2.0"
+    version: "0.3.0"
   term_glyph:
     dependency: transitive
     description:

@@ -84,4 +84,13 @@ void main() {
     expect(kServerClientId, endsWith('.apps.googleusercontent.com'));
     expect(kServerClientId, startsWith('845446124781-'));
   });
+
+  test('explains the dark Google button on desktop, and not on Android', () {
+    // Under `flutter test` the host is Linux with no Desktop client id, so
+    // the button is dark and must say why -- a silently-absent control reads
+    // as a bug. On Android googleSupported is true and the reason is null.
+    expect(SyncScreen.googleSupported, isFalse);
+    expect(SyncScreen.googleReason, isNotNull);
+    expect(SyncScreen.googleReason, contains('password'));
+  });
 }
