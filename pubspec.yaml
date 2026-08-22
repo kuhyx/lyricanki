@@ -1,7 +1,7 @@
 name: lyricanki
 description: "Turn song lyrics into an Anki vocabulary deck: every unique word, lemmatised, glossed from a real dictionary, with the lyric line it came from."
 publish_to: 'none'
-version: 1.0.4+1
+version: 1.0.5+1
 
 environment:
   sdk: ^3.12.2
@@ -28,6 +28,10 @@ dev_dependencies:
   flutter_launcher_icons: ^0.14.4
   flutter_test:
     sdk: flutter
+  # Lets the export flow be tested without a real Android documents directory:
+  # the fake overrides getApplicationDocumentsPath.
+  path_provider_platform_interface: ^2.1.2
+  plugin_platform_interface: ^2.1.8
   # Stricter than flutter_lints -- standardized across this ecosystem's
   # Flutter apps (all Flutter apps use very_good_analysis, not flutter_lints).
   very_good_analysis: ^10.2.0
