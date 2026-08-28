@@ -5,10 +5,10 @@ packages:
     dependency: "direct main"
     description:
       name: archive
-      sha256: be169cf6ac481e052c4538715d88841d567150dfe1df38aaec76461a4e7b39f2
+      sha256: ace891da0862b0e4cabbb064ee3fd87b2728b898949fdb366d83fe98342c9f19
       url: "https://pub.dev"
     source: hosted
-    version: "4.1.0"
+    version: "4.2.0"
   args:
     dependency: transitive
     description:
@@ -85,20 +85,20 @@ packages:
     dependency: "direct main"
     description:
       path: crdt_sync_dart
-      ref: "crdt_sync_dart-v0.11.0"
-      resolved-ref: feaaf691037da1580fabc992819180d85a97c90a
+      ref: "crdt_sync_dart-v0.11.1"
+      resolved-ref: "978d32af3af66f0d6500c4c6c0c6df5370ebe9a2"
       url: "https://github.com/kuhyx/utils"
     source: git
-    version: "0.11.0"
+    version: "0.11.1"
   crdt_sync_flutter:
     dependency: "direct main"
     description:
       path: crdt_sync_flutter
-      ref: "crdt_sync_flutter-v0.2.1"
-      resolved-ref: "79130a6dd7cba1fd0b59648f6b6678d27dda987b"
+      ref: "crdt_sync_flutter-v0.3.1"
+      resolved-ref: "51700aa89eaf1789ae98491aaa854c54d35b4170"
       url: "https://github.com/kuhyx/utils"
     source: git
-    version: "0.2.1"
+    version: "0.3.1"
   cross_file:
     dependency: transitive
     description:
@@ -119,11 +119,11 @@ packages:
     dependency: "direct main"
     description:
       path: design_system
-      ref: "design_system-v0.1.0"
-      resolved-ref: e6c9af81e9ac3000d87d9168d3ef87ba2979258b
+      ref: "design_system-v0.2.1"
+      resolved-ref: "978d32af3af66f0d6500c4c6c0c6df5370ebe9a2"
       url: "https://github.com/kuhyx/utils"
     source: git
-    version: "0.1.0"
+    version: "0.2.1"
   fake_async:
     dependency: transitive
     description:
@@ -181,18 +181,18 @@ packages:
     dependency: transitive
     description:
       name: flutter_secure_storage
-      sha256: "7686b1d6a29985dcbb808c59518226e603e3bfa7c0ddfd1a0d00e4cda77c868e"
+      sha256: "15e8c8fe269fdf7d469b23008ab3df521c8b826ed345820532364c31bdebace6"
       url: "https://pub.dev"
     source: hosted
-    version: "10.3.1"
+    version: "11.0.0"
   flutter_secure_storage_darwin:
     dependency: transitive
     description:
       name: flutter_secure_storage_darwin
-      sha256: "82329fa5cdf343773b1b6897dea959105a29f092454259edff92f9f6637e8149"
+      sha256: ac6d76a752de0cd738334eb4b21743fc4943f449f5b6e308f18838b048c02ac0
       url: "https://pub.dev"
     source: hosted
-    version: "0.3.2"
+    version: "0.4.0"
   flutter_secure_storage_linux:
     dependency: transitive
     description:
@@ -668,11 +668,11 @@ packages:
     dependency: "direct main"
     description:
       path: sync_settings_ui
-      ref: "sync_settings_ui-v0.3.0"
-      resolved-ref: db3d8f827fd9f1a2fc513eef91a6025802b7fba3
+      ref: "sync_settings_ui-v0.4.1"
+      resolved-ref: "51700aa89eaf1789ae98491aaa854c54d35b4170"
       url: "https://github.com/kuhyx/utils"
     source: git
-    version: "0.3.0"
+    version: "0.4.1"
   term_glyph:
     dependency: transitive
     description:
