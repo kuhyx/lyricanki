@@ -107,6 +107,6 @@ class DeckSession extends ChangeNotifier {
       deckName: _track?.name ?? 'lyricanki',
       path: path,
     );
-    return file.length();
+    return await file.length();
   }
 }

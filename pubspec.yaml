@@ -1,7 +1,7 @@
 name: lyricanki
 description: "Turn song lyrics into an Anki vocabulary deck: every unique word, lemmatised, glossed from a real dictionary, with the lyric line it came from."
 publish_to: 'none'
-version: 1.0.30+1
+version: 1.0.31+1
 
 environment:
   sdk: ^3.12.2
@@ -54,12 +54,12 @@ dev_dependencies:
   plugin_platform_interface: 2.1.8
   # Stricter than flutter_lints -- standardized across this ecosystem's
   # Flutter apps (all Flutter apps use very_good_analysis, not flutter_lints).
-  very_good_analysis: ^10.3.0
+  very_good_analysis: ^11.0.0
 
 flutter:
   uses-material-design: true
 
-# PYTHONPATH=~/testsAndMisc python3 -m python_pkg.app_icons generate --app lyricanki
+# PYTHONPATH=~/src/testsAndMisc python3 -m python_pkg.app_icons generate --app lyricanki
 # then: dart run flutter_launcher_icons
 flutter_launcher_icons:
   android: true

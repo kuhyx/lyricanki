@@ -150,7 +150,7 @@ class PackStore {
     if (target.existsSync()) {
       await target.delete();
     }
-    return temp.rename(target.path);
+    return await temp.rename(target.path);
   }
 
   /// Deletes the pack for [language], if present.

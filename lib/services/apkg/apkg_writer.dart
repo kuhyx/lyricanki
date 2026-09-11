@@ -58,7 +58,7 @@ class ApkgWriter {
     final bytes = build(cards: cards, deckName: deckName);
     final file = File(path);
     await file.parent.create(recursive: true);
-    return file.writeAsBytes(bytes);
+    return await file.writeAsBytes(bytes);
   }
 
   ArchiveFile _mediaEntry() {

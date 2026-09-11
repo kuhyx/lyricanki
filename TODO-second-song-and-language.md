@@ -1,10 +1,10 @@
 # lyricanki — next session prompt
 
-Paste everything below the line into a fresh Claude session with cwd `~/lyricanki`.
+Paste everything below the line into a fresh Claude session with cwd `~/src/lyricanki`.
 
 ---
 
-Work on `~/lyricanki`. Read `/home/kuhy/.claude/plans/learn-language-through-the-zany-boole.md`
+Work on `~/src/lyricanki`. Read `/home/kuhy/.claude/plans/learn-language-through-the-zany-boole.md`
 first — it is the approved plan and records every settled decision (Q1–Q21).
 
 ## Read this before you plan anything
@@ -87,7 +87,7 @@ Nothing is blocking. In rough order of value:
   lyricanki in `testsAndMisc` `98ca3ac5`. Diagnose with
   `adb shell dumpsys package <pkg> | grep -o 'hidden=[a-z]*'` and compare
   against a known-good app.
-- **`~/testsAndMisc/phone_focus_mode/deploy.sh` is for the old rooted phone**
+- **`~/src/testsAndMisc/phone_focus_mode/deploy.sh` is for the old rooted phone**
   and dies with "Could not get root shell". The Pixel is unrooted under
   Device Owner; the policy ships as a bundled asset, so a whitelist change
   means editing `config.sh`, regenerating `policy.json` with
