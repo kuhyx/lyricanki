@@ -9,9 +9,7 @@ import 'package:lyricanki/screens/sync_screen.dart';
 import 'package:lyricanki/services/history_sync.dart';
 
 void main() {
-  testWidgets('builds its closures against the shared project', (
-    tester,
-  ) async {
+  testWidgets('builds its closures against the shared project', (tester) async {
     // The fake ships with crdt_sync_flutter precisely so an app can exercise
     // its own sync wiring without a platform channel. Without it every
     // closure here throws MissingPluginException.

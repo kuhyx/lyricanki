@@ -8,6 +8,8 @@ import 'package:http/testing.dart';
 import 'package:lyricanki/screens/pack_screen.dart';
 import 'package:lyricanki/services/pack/pack_store.dart';
 
+import 'real_async.dart';
+
 void main() {
   late Directory root;
 
@@ -47,11 +49,8 @@ void main() {
   ) async {
     final store = storeServing(utf8.encode('data'));
     await pump(tester, store);
-    await tester.runAsync(() async {
-      await tester.tap(find.text('Download pack'));
-      await Future<void>.delayed(const Duration(milliseconds: 50));
-    });
-    await tester.pump();
+    await tester.runAsync(() => tester.tap(find.text('Download pack')));
+    await pumpUntil(tester, () => hasText('Remove pack'));
     expect(find.text('Remove pack'), findsOneWidget);
     expect(await store.hasPack('es'), isTrue);
     store.close();
@@ -60,16 +59,10 @@ void main() {
   testWidgets('removing deletes the pack', (tester) async {
     final store = storeServing(utf8.encode('data'));
     await pump(tester, store);
-    await tester.runAsync(() async {
-      await tester.tap(find.text('Download pack'));
-      await Future<void>.delayed(const Duration(milliseconds: 50));
-    });
-    await tester.pump();
-    await tester.runAsync(() async {
-      await tester.tap(find.text('Remove pack'));
-      await Future<void>.delayed(const Duration(milliseconds: 50));
-    });
-    await tester.pump();
+    await tester.runAsync(() => tester.tap(find.text('Download pack')));
+    await pumpUntil(tester, () => hasText('Remove pack'));
+    await tester.runAsync(() => tester.tap(find.text('Remove pack')));
+    await pumpUntil(tester, () => hasText('Download pack'));
     expect(find.text('Download pack'), findsOneWidget);
     expect(await store.hasPack('es'), isFalse);
     store.close();
@@ -110,11 +103,11 @@ void main() {
   ) async {
     final store = storeServing(utf8.encode(''), status: 404);
     await pump(tester, store);
-    await tester.runAsync(() async {
-      await tester.tap(find.text('Download pack'));
-      await Future<void>.delayed(const Duration(milliseconds: 50));
-    });
-    await tester.pump();
+    await tester.runAsync(() => tester.tap(find.text('Download pack')));
+    await pumpUntil(
+      tester,
+      () => find.textContaining('404').evaluate().isNotEmpty,
+    );
     expect(find.textContaining('404'), findsOneWidget);
     store.close();
   });
@@ -132,11 +125,8 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.runAsync(() async {
-      await tester.tap(find.text('Download pack'));
-      await Future<void>.delayed(const Duration(milliseconds: 50));
-    });
-    await tester.pump();
+    await tester.runAsync(() => tester.tap(find.text('Download pack')));
+    await pumpUntil(tester, () => changes > 0);
     expect(changes, 1);
     store.close();
   });

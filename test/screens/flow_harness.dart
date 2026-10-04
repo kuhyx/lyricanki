@@ -17,6 +17,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqlite3/sqlite3.dart';
 
 import '../services/pack/pack_reader_test.dart' show buildPack;
+import 'real_async.dart';
 
 /// Shared scaffolding for the end-to-end screen flows.
 ///
@@ -131,6 +132,9 @@ Future<void> actAsync(
     await action();
     await Future<void>.delayed(Duration(milliseconds: settleMs));
   });
+  // On a starved CPU the work outlasts settleMs, and a spinner would make
+  // pumpAndSettle time out: wait for it to go first.
+  await pumpUntil(tester, () => !isBusy());
   await tester.pumpAndSettle();
 }
 

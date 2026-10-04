@@ -55,9 +55,7 @@ void main() {
     expect(find.text('heart'), findsOneWidget);
   });
 
-  testWidgets('the review screen renders the same shared tile', (
-    tester,
-  ) async {
+  testWidgets('the review screen renders the same shared tile', (tester) async {
     final session =
         DeckSession(
           pack: PackReader.fromDatabase(buildPack()),

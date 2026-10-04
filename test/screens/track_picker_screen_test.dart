@@ -23,9 +23,7 @@ Map<String, dynamic> row(
 };
 
 Future<void> pump(WidgetTester tester, LrclibClient client) =>
-    tester.pumpWidget(
-      MaterialApp(home: TrackPickerScreen(client: client)),
-    );
+    tester.pumpWidget(MaterialApp(home: TrackPickerScreen(client: client)));
 
 LrclibClient clientFor(Object body) => LrclibClient(
   httpClient: MockClient(
