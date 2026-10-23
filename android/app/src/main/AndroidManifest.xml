@@ -7,7 +7,7 @@
          like a broken DNS resolver, and was misdiagnosed as one. -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <application
-        android:label="lyricanki"
+        android:label="LyricAnki"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
