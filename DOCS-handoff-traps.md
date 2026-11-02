@@ -1,20 +1,4 @@
-# lyricanki — next session prompt
-
-Paste everything below the line into a fresh Claude session with cwd `~/src/lyricanki`.
-
----
-
-Work on `~/src/lyricanki`. Read `/home/kuhy/.claude/plans/learn-language-through-the-zany-boole.md`
-first — it is the approved plan and records every settled decision (Q1–Q21).
-
-## Read this before you plan anything
-
-**Another session (`utils-6c`) was implementing the exported-song-history
-feature** described in `prompts/exported-song-history.md`. It touches
-`lib/services/`, `lib/models/`, `lib/screens/song_search_screen.dart` and
-`pubspec.yaml`. **Run `git log --oneline -10` and `git status` first** — if
-that work has landed, the file descriptions below may be stale; if it has
-not, do not start it without checking whether that session is still active.
+# lyricanki: verified state, traps and corrections
 
 ## State: verified end to end, on both platforms
 
@@ -34,19 +18,6 @@ Both halves are done as of 2026-08-22 (HEAD at handoff: `55b7dcb`).
 The AnkiDroid re-import reported *"147 notes found, 1 new, 146 used to update
 existing"* against a collection that already held the notes, and left one
 deck. That is the dedup guarantee, measured on-device rather than argued.
-
-## What is actually left
-
-Nothing is blocking. In rough order of value:
-
-1. **Only one song has ever been exercised.** Every acceptance number comes
-   from Despacito `#36856755`. A second and third song — ideally one with
-   heavy enclitics (`dámelo`), one with reflexives — would show whether 147
-   was luck. The `unresolved` list on the review screen is the built-in
-   canary: a real Spanish word appearing there means the pack regressed.
-2. **Only Spanish exists.** The pack format is language-agnostic and
-   `build_pack.py` takes `--language`, but no second pack has been built.
-3. **Song history** — see the coordination note at the top.
 
 ## Two bugs were found and fixed on 2026-08-22 — do not reintroduce them
 
@@ -155,10 +126,3 @@ Nothing is blocking. In rough order of value:
 - **Verify before claiming.** Three agreed acceptance numbers (>=150, 143, 148)
   were each wrong on measurement, and a confident DNS diagnosis turned out to
   be a missing manifest line.
-
-## Open, non-blocking
-
-- `testsAndMisc` commit `1d7271f0` bundles this repo's glyph work under
-  another workstream's message and **was pushed**. Kuhy's call; leaving it.
-
-REMOVE ME AFTER FINISH
