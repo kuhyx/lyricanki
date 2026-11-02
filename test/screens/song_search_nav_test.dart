@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lyricanki/widgets/vocab_card_cell.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 
 import 'flow_harness.dart';
@@ -50,7 +51,7 @@ void main() {
     final store = storeIn(root);
     await pumpHome(tester, store);
     await pickTrack(tester);
-    expect(find.byType(CheckboxListTile), findsWidgets);
+    expect(find.byType(VocabCardCell), findsWidgets);
 
     await actAsync(tester, tester.pageBack);
     expect(find.text('Ready'), findsOneWidget);
@@ -66,7 +67,7 @@ void main() {
     await pickTrack(tester);
     await actAsync(tester, tester.pageBack);
     await pickTrack(tester);
-    expect(find.byType(CheckboxListTile), findsWidgets);
+    expect(find.byType(VocabCardCell), findsWidgets);
     store.close();
   });
 }

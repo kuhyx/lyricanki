@@ -4,6 +4,7 @@ import 'package:lyricanki/models/track.dart';
 import 'package:lyricanki/screens/review_screen.dart';
 import 'package:lyricanki/services/deck_session.dart';
 import 'package:lyricanki/services/pack/pack_reader.dart';
+import 'package:lyricanki/widgets/vocab_card_cell.dart';
 
 import '../services/pack/pack_reader_test.dart' show buildPack;
 
@@ -44,16 +45,19 @@ void main() {
     // Q3: nothing is filtered out; the user unticks what they already know.
     final session = sessionWith('Corazón suave');
     await pump(tester, session);
-    expect(find.byType(CheckboxListTile), findsNWidgets(2));
+    expect(find.byType(VocabCardCell), findsNWidgets(2));
     expect(find.textContaining('corazón'), findsOneWidget);
     expect(find.text('Export 2 cards'), findsOneWidget);
     session.pack.close();
   });
 
-  testWidgets('shows the gloss and part of speech on each row', (tester) async {
+  testWidgets('shows the gloss and part of speech on each cell', (
+    tester,
+  ) async {
     final session = sessionWith('Corazón');
     await pump(tester, session);
-    expect(find.text('corazón  ·  noun'), findsOneWidget);
+    expect(find.text('corazón'), findsOneWidget);
+    expect(find.text('noun'), findsOneWidget);
     expect(find.text('heart'), findsOneWidget);
     session.pack.close();
   });
@@ -63,7 +67,7 @@ void main() {
   ) async {
     final session = sessionWith('Corazón suave');
     await pump(tester, session);
-    await tester.tap(find.byType(CheckboxListTile).first);
+    await tester.tap(find.byType(VocabCardCell).first);
     await tester.pump();
     expect(find.text('Export 1 cards'), findsOneWidget);
     session.pack.close();
@@ -97,7 +101,8 @@ void main() {
     // A real Spanish word here means the pack regressed, so it is surfaced.
     final session = sessionWith('Corazón dididiri woah');
     await pump(tester, session);
-    expect(find.text('2 words not in the dictionary'), findsOneWidget);
+    await tester.tap(find.text('2 words not in the dictionary'));
+    await tester.pumpAndSettle();
     expect(find.text('dididiri, woah'), findsOneWidget);
     session.pack.close();
   });

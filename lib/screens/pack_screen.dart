@@ -87,52 +87,87 @@ class _PackScreenState extends State<PackScreen> {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(title: const Text('Dictionary pack')),
-      body: ListView(
+      body: Padding(
         padding: const EdgeInsets.all(AppSpacing.md),
-        children: <Widget>[
-          ListTile(
-            leading: Icon(
-              _installed ? Icons.check_circle_outline : Icons.download_outlined,
-            ),
-            title: Text('Spanish (${widget.language})'),
-            subtitle: Text(
-              _installed
-                  ? 'Installed. Words resolve offline.'
-                  : 'Not installed. About 43 MB.',
-            ),
-          ),
-          if (_busy) ...<Widget>[
-            const SizedBox(height: AppSpacing.sm),
-            LinearProgressIndicator(value: _progress),
-          ],
-          if (_error != null) ...<Widget>[
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              _error!,
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.error,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: <Widget>[
+            // Two tiles side by side: what the pack is, and what to do next.
+            IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: <Widget>[
+                  Expanded(child: _statusTile(theme)),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(child: _actionTile()),
+                ],
               ),
             ),
+            if (_busy) ...<Widget>[
+              const SizedBox(height: AppSpacing.sm),
+              LinearProgressIndicator(value: _progress),
+            ],
+            if (_error != null) ...<Widget>[
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                _error!,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.error,
+                ),
+              ),
+            ],
+            const SizedBox(height: AppSpacing.md),
+            // Scrolls only if a very small screen cannot hold the credits.
+            const Expanded(child: SingleChildScrollView(child: _Attribution())),
           ],
-          const SizedBox(height: AppSpacing.md),
-          if (_installed)
-            OutlinedButton.icon(
+        ),
+      ),
+    );
+  }
+
+  Widget _statusTile(ThemeData theme) => Card(
+    margin: EdgeInsets.zero,
+    child: Padding(
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Icon(
+            _installed ? Icons.check_circle_outline : Icons.download_outlined,
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            'Spanish (${widget.language})',
+            style: theme.textTheme.titleSmall,
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            _installed
+                ? 'Installed. Words resolve offline.'
+                : 'Not installed. About 43 MB.',
+            style: theme.textTheme.bodySmall,
+          ),
+        ],
+      ),
+    ),
+  );
+
+  Widget _actionTile() => Card(
+    margin: EdgeInsets.zero,
+    child: Center(
+      child: _installed
+          ? OutlinedButton.icon(
               onPressed: _busy ? null : _delete,
               icon: const Icon(Icons.delete_outline),
               label: const Text('Remove pack'),
             )
-          else
-            FilledButton.icon(
+          : FilledButton.icon(
               onPressed: _busy ? null : _download,
               icon: const Icon(Icons.download_outlined),
               label: const Text('Download pack'),
             ),
-          const SizedBox(height: AppSpacing.xl),
-          const _Attribution(),
-        ],
-      ),
-    );
-  }
+    ),
+  );
 }
 
 /// The licence notices the pack and lyrics sources require.

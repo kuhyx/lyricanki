@@ -2,51 +2,23 @@ import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:lyricanki/models/vocab_card.dart';
 
-/// One card, rendered the same way everywhere it appears.
+/// One card as a read-only row, rendered the same way everywhere it appears.
 ///
-/// **Deliberately shared** between the review screen (before export, with a
-/// checkbox) and the export detail screen (afterwards, read-only). The two
-/// were going to drift the moment they were written twice: a change to how a
-/// gloss or a context line reads would land in one and not the other, and the
-/// list you approve would stop looking like the list you exported.
-///
-/// The checkbox is the only difference, so it is the only thing that varies:
-/// pass [onToggle] to get a tickable row, omit it for a read-only one.
+/// Shared by the export detail screen (afterwards, a record of what shipped)
+/// and the review screen's long-press sheet, so a gloss or a context line
+/// reads identically before and after the export.
 class VocabCardTile extends StatelessWidget {
   /// Creates a tile for [card].
-  const VocabCardTile({
-    required this.card,
-    this.selected,
-    this.onToggle,
-    super.key,
-  });
+  const VocabCardTile({required this.card, super.key});
 
   /// The card to render. Its four fields are the Anki note's four fields.
   final VocabCard card;
 
-  /// Whether the row is ticked. Ignored when [onToggle] is null.
-  final bool? selected;
-
-  /// Called when the row is ticked or unticked.
-  ///
-  /// Null renders the row without a checkbox, which is what history wants:
-  /// an exported deck is a fact, not a choice still being made.
-  final VoidCallback? onToggle;
-
   @override
-  Widget build(BuildContext context) {
-    final title = Text('${card.lemma}  ·  ${card.pos}');
-    final subtitle = _Subtitle(card: card);
-    if (onToggle == null) {
-      return ListTile(title: title, subtitle: subtitle);
-    }
-    return CheckboxListTile(
-      value: selected ?? false,
-      onChanged: (_) => onToggle!(),
-      title: title,
-      subtitle: subtitle,
-    );
-  }
+  Widget build(BuildContext context) => ListTile(
+    title: Text('${card.lemma}  ·  ${card.pos}'),
+    subtitle: _Subtitle(card: card),
+  );
 }
 
 /// The gloss, and the lyric line the word was met in.

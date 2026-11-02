@@ -24,35 +24,12 @@ void main() {
       expect(find.text(_card.line), findsOneWidget);
     });
 
-    testWidgets('is read-only without onToggle', (tester) async {
+    testWidgets('is a read-only row', (tester) async {
       await tester.pumpWidget(_wrap(const VocabCardTile(card: _card)));
 
       // History is a record of what shipped, not a choice still being made.
-      expect(find.byType(CheckboxListTile), findsNothing);
+      expect(find.byType(Checkbox), findsNothing);
       expect(find.byType(ListTile), findsOneWidget);
-    });
-
-    testWidgets('ticks and reports back when onToggle is given', (
-      tester,
-    ) async {
-      var toggled = 0;
-      await tester.pumpWidget(
-        _wrap(
-          VocabCardTile(
-            card: _card,
-            selected: true,
-            onToggle: () => toggled++,
-          ),
-        ),
-      );
-
-      final box = tester.widget<CheckboxListTile>(
-        find.byType(CheckboxListTile),
-      );
-      expect(box.value, isTrue);
-
-      await tester.tap(find.byType(CheckboxListTile));
-      expect(toggled, 1);
     });
 
     testWidgets('omits the context row when the card has no line', (

@@ -1,6 +1,7 @@
 import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:lyricanki/services/deck_session.dart';
+import 'package:lyricanki/widgets/vocab_card_cell.dart';
 import 'package:lyricanki/widgets/vocab_card_tile.dart';
 
 /// Lists every candidate card and lets the user untick the ones they know.
@@ -69,42 +70,55 @@ class _ReviewScreenState extends State<ReviewScreen> {
                   title: 'No words yet',
                   message: 'Pick a song to build a deck from it.',
                 )
-              : ListView.builder(
-                  itemCount: entries.length + 1,
-                  itemBuilder: (context, index) {
-                    if (index == entries.length) {
-                      return UnresolvedWordsNote(
-                        unresolved: session.unresolved,
-                      );
-                    }
-                    final entry = entries[index];
-                    // The same tile the export detail screen renders, so the
-                    // list you approve looks like the list you exported.
-                    return VocabCardTile(
-                      card: entry.card,
-                      selected: entry.selected,
-                      onToggle: () => session.toggle(index),
-                    );
-                  },
+              : FitGrid(
+                  itemCount: entries.length,
+                  minSquare: 0.8,
+                  itemBuilder: (context, index) => VocabCardCell(
+                    key: ValueKey<String>('cell-$index'),
+                    card: entries[index].card,
+                    selected: entries[index].selected,
+                    onToggle: () => session.toggle(index),
+                  ),
                 ),
           bottomNavigationBar: SafeArea(
             child: Padding(
               padding: const EdgeInsets.all(AppSpacing.md),
-              child: FilledButton.icon(
-                onPressed: _exporting || session.selectedCount == 0
-                    ? null
-                    : _export,
-                icon: _exporting
-                    ? const SizedBox.square(
-                        dimension: AppSpacing.md,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.download_outlined),
-                label: Text(
-                  _exporting
-                      ? 'Exporting…'
-                      : 'Export ${session.selectedCount} cards',
-                ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  if (session.unresolved.isNotEmpty)
+                    // Surfaced, not dropped: the canary for a pack regression.
+                    TextButton(
+                      onPressed: () => showModalBottomSheet<void>(
+                        context: context,
+                        builder: (_) => SafeArea(
+                          child: UnresolvedWordsNote(
+                            unresolved: session.unresolved,
+                          ),
+                        ),
+                      ),
+                      child: Text(
+                        '${session.unresolved.length} words not in the '
+                        'dictionary',
+                      ),
+                    ),
+                  FilledButton.icon(
+                    onPressed: _exporting || session.selectedCount == 0
+                        ? null
+                        : _export,
+                    icon: _exporting
+                        ? const SizedBox.square(
+                            dimension: AppSpacing.md,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.download_outlined),
+                    label: Text(
+                      _exporting
+                          ? 'Exporting…'
+                          : 'Export ${session.selectedCount} cards',
+                    ),
+                  ),
+                ],
               ),
             ),
           ),

@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:lyricanki/services/lrclib_client.dart';
+import 'package:lyricanki/widgets/vocab_card_cell.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 
 import 'flow_harness.dart';
@@ -28,7 +29,7 @@ void main() {
     await pumpHome(tester, store);
     await pickTrack(tester);
 
-    expect(find.byType(CheckboxListTile), findsWidgets);
+    expect(find.byType(VocabCardCell), findsWidgets);
     expect(find.textContaining('Export'), findsOneWidget);
 
     await actAsync(
@@ -82,10 +83,11 @@ void main() {
     await pumpHome(tester, store);
     await pickTrack(tester);
 
-    final before = tester
-        .widgetList<CheckboxListTile>(find.byType(CheckboxListTile))
-        .length;
-    await tester.tap(find.byType(CheckboxListTile).first);
+    final label = tester
+        .widget<Text>(find.textContaining(RegExp(r'^Export \d+ cards$')))
+        .data!;
+    final before = int.parse(RegExp(r'\d+').firstMatch(label)!.group(0)!);
+    await tester.tap(find.byType(VocabCardCell).first);
     await tester.pump();
     expect(find.text('Export ${before - 1} cards'), findsOneWidget);
 

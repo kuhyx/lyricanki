@@ -7,6 +7,7 @@ import 'package:lyricanki/screens/review_screen.dart';
 import 'package:lyricanki/models/track.dart';
 import 'package:lyricanki/services/deck_session.dart';
 import 'package:lyricanki/services/pack/pack_reader.dart';
+import 'package:lyricanki/widgets/vocab_card_cell.dart';
 import 'package:lyricanki/widgets/vocab_card_tile.dart';
 
 import '../services/pack/pack_reader_test.dart' show buildPack;
@@ -76,10 +77,19 @@ void main() {
       ),
     );
 
-    // Same widget type, same text, from a screen that ticks rather than
-    // reads. A change to either propagates to both by construction.
+    // The grid shows compact cells; long-press opens the card in the same
+    // shared tile the detail screen uses, so a change to either propagates
+    // to both by construction.
+    await tester.longPress(find.byType(VocabCardCell));
+    await tester.pumpAndSettle();
     expect(find.byType(VocabCardTile), findsOneWidget);
     expect(find.text('corazón  ·  noun'), findsOneWidget);
-    expect(find.text('heart'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(VocabCardTile),
+        matching: find.text('heart'),
+      ),
+      findsOneWidget,
+    );
   });
 }
