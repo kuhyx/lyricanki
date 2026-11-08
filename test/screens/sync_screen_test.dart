@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:crdt_sync/crdt_sync.dart';
 import 'package:crdt_sync_flutter/crdt_sync_flutter.dart';
 import 'package:crdt_sync_flutter/testing/fake_secure_storage.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lyricanki/screens/sync_screen.dart';
@@ -58,12 +59,17 @@ void main() {
   testWidgets('offers Google only where a flow can actually succeed', (
     tester,
   ) async {
-    // Under `flutter test` the host is Linux, so the plugin half is out and
+    // `flutter test` reports the Android target platform by default, which
+    // would switch the plugin half on. Pin Linux: the plugin half is out and
     // the loopback half is live -- but kDesktopClientId is still empty, so
     // nothing can succeed and the button must stay hidden. This is the trap
     // the double gate exists for: a visible control that can never work.
     expect(kDesktopClientId, isEmpty, reason: 'no Desktop client yet');
-    expect(SyncScreen.googleSupported, isFalse);
+    debugDefaultTargetPlatformOverride = TargetPlatform.linux;
+    final supported = SyncScreen.googleSupported;
+    // testWidgets verifies the override is unset before tear-downs run.
+    debugDefaultTargetPlatformOverride = null;
+    expect(supported, isFalse);
   });
 
   test('connectWithGoogle declines when no flow is configured', () async {
@@ -84,11 +90,18 @@ void main() {
   });
 
   test('explains the dark Google button on desktop, and not on Android', () {
-    // Under `flutter test` the host is Linux with no Desktop client id, so
-    // the button is dark and must say why -- a silently-absent control reads
-    // as a bug. On Android googleSupported is true and the reason is null.
+    // On Linux with no Desktop client id the button is dark and must say why
+    // -- a silently-absent control reads as a bug. On Android
+    // googleSupported is true and the reason is null.
+    debugDefaultTargetPlatformOverride = TargetPlatform.linux;
+    addTearDown(() => debugDefaultTargetPlatformOverride = null);
     expect(SyncScreen.googleSupported, isFalse);
     expect(SyncScreen.googleReason, isNotNull);
     expect(SyncScreen.googleReason, contains('password'));
+
+    debugDefaultTargetPlatformOverride = TargetPlatform.android;
+    expect(SyncScreen.googleSupported, isTrue);
+    expect(SyncScreen.googleReason, isNull);
+    debugDefaultTargetPlatformOverride = null;
   });
 }

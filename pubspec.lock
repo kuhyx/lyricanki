@@ -5,10 +5,10 @@ packages:
     dependency: transitive
     description:
       name: android_file_picker
-      sha256: "03d3dd3cb578ab26b1e528aeea27bf6b976942f5a24e3da82d270369b8e161a8"
+      sha256: "868183c959e754e915954d8074c20cfa4cfdb4684b35ecc08378437be1a542d8"
       url: "https://pub.dev"
     source: hosted
-    version: "2.1.2"
+    version: "2.1.3"
   archive:
     dependency: "direct main"
     description:
@@ -93,20 +93,20 @@ packages:
     dependency: "direct main"
     description:
       path: crdt_sync_dart
-      ref: "crdt_sync_dart-v0.11.3"
-      resolved-ref: a2e7334dfec5131170a084510d70361d53dc40bc
+      ref: "crdt_sync_dart-v0.12.0"
+      resolved-ref: "59b33949e4a130bb76c77e7434ddf4bbf8cde3a3"
       url: "https://github.com/kuhyx/utils"
     source: git
-    version: "0.11.3"
+    version: "0.12.0"
   crdt_sync_flutter:
     dependency: "direct main"
     description:
       path: crdt_sync_flutter
-      ref: "crdt_sync_flutter-v0.3.5"
-      resolved-ref: def48e346bac0afee242fc99e45e5242361f7f61
+      ref: "crdt_sync_flutter-v0.5.0"
+      resolved-ref: "3121639732fac85f7e25f3df4e081a228d63aa74"
       url: "https://github.com/kuhyx/utils"
     source: git
-    version: "0.3.5"
+    version: "0.5.0"
   cross_file:
     dependency: transitive
     description:
@@ -127,11 +127,11 @@ packages:
     dependency: transitive
     description:
       path: data_transfer_flutter
-      ref: "data_transfer_flutter-v0.2.0"
-      resolved-ref: bbb7f0f0c0cd891518418472955c8a2ac6cbca4d
+      ref: "data_transfer_flutter-v0.2.1"
+      resolved-ref: d4fca83c9f2ed33b3315cd838b9ca532ae8e559c
       url: "https://github.com/kuhyx/utils"
     source: git
-    version: "0.2.0"
+    version: "0.2.1"
   dbus:
     dependency: transitive
     description:
@@ -185,18 +185,18 @@ packages:
     dependency: transitive
     description:
       name: file_picker
-      sha256: "02f2945a7f29535c735f6b283c3c5553810566d3052d730429aec78fe9d06592"
+      sha256: c64036857780d7125f011d543f89eedcb5df61da473668bace4eee9ab875284d
       url: "https://pub.dev"
     source: hosted
-    version: "13.3.1"
+    version: "13.3.2"
   file_picker_darwin:
     dependency: transitive
     description:
       name: file_picker_darwin
-      sha256: b845af092ca7a3cff0e768029f835157d371a8341750f4158a7ad358143b0e54
+      sha256: daeb0219f6279c73eb9c63ae9a566beef04ae13d59b8feba0be2a7f3b258d3d4
       url: "https://pub.dev"
     source: hosted
-    version: "2.4.1"
+    version: "2.4.2"
   file_picker_linux:
     dependency: transitive
     description:
@@ -372,54 +372,15 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.3"
-  google_identity_services_web:
+  google_account_token:
     dependency: transitive
     description:
-      name: google_identity_services_web
-      sha256: "5d187c46dc59e02646e10fe82665fc3884a9b71bc1c90c2b8b749316d33ee454"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.3.3+1"
-  google_sign_in:
-    dependency: transitive
-    description:
-      name: google_sign_in
-      sha256: "521031b65853b4409b8213c0387d57edaad7e2a949ce6dea0d8b2afc9cb29763"
-      url: "https://pub.dev"
-    source: hosted
-    version: "7.2.0"
-  google_sign_in_android:
-    dependency: transitive
-    description:
-      name: google_sign_in_android
-      sha256: "57782125965ca87b03d42a147d40b046f1fd6a09141a58913e1b86671a5ef22e"
-      url: "https://pub.dev"
-    source: hosted
-    version: "7.2.16"
-  google_sign_in_ios:
-    dependency: transitive
-    description:
-      name: google_sign_in_ios
-      sha256: ac1e4c1205267cb7999d1d81333fccffdfda29e853f434bbaf71525498bb6950
-      url: "https://pub.dev"
-    source: hosted
-    version: "6.3.0"
-  google_sign_in_platform_interface:
-    dependency: transitive
-    description:
-      name: google_sign_in_platform_interface
-      sha256: "7f59208c42b415a3cca203571128d6f84f885fead2d5b53eb65a9e27f2965bb5"
-      url: "https://pub.dev"
-    source: hosted
-    version: "3.1.0"
-  google_sign_in_web:
-    dependency: transitive
-    description:
-      name: google_sign_in_web
-      sha256: d473003eeca892f96a01a64fc803378be765071cb0c265ee872c7f8683245d14
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.1.3"
+      path: google_account_token
+      ref: "google_account_token-v0.1.0"
+      resolved-ref: db70ba204d124c6eadf9b8808cd3d3b3e70363d1
+      url: "https://github.com/kuhyx/utils"
+    source: git
+    version: "0.1.0"
   hooks:
     dependency: transitive
     description:
@@ -773,10 +734,10 @@ packages:
     dependency: "direct main"
     description:
       name: sqlite3
-      sha256: "5340531ad17f386ae444873f643f281060b6238cc702edeee6b1e90bc4c6874e"
+      sha256: "8765980411f9b6733534efe9d014fad0750fa649590598772c04692deb34886b"
       url: "https://pub.dev"
     source: hosted
-    version: "3.8.0"
+    version: "3.9.1"
   stack_trace:
     dependency: transitive
     description:
@@ -805,11 +766,11 @@ packages:
     dependency: "direct main"
     description:
       path: sync_settings_ui
-      ref: "sync_settings_ui-v0.5.2"
-      resolved-ref: "648bde44b1756485d95ca3c3a8714cd2015d5be4"
+      ref: "sync_settings_ui-v0.6.1"
+      resolved-ref: ebedbf4b27fa332f7b8e6d80117d1c409bf3a7ad
       url: "https://github.com/kuhyx/utils"
     source: git
-    version: "0.5.2"
+    version: "0.6.1"
   term_glyph:
     dependency: transitive
     description:

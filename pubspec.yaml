@@ -1,7 +1,7 @@
 name: lyricanki
 description: "Turn song lyrics into an Anki vocabulary deck: every unique word, lemmatised, glossed from a real dictionary, with the lyric line it came from."
 publish_to: 'none'
-version: 1.0.36+1
+version: 1.0.37+1
 
 environment:
   sdk: ^3.12.2
@@ -14,12 +14,12 @@ dependencies:
   crdt_sync:
     git:
       url: https://github.com/kuhyx/utils
-      ref: crdt_sync_dart-v0.11.3
+      ref: crdt_sync_dart-v0.12.0
       path: crdt_sync_dart
   crdt_sync_flutter:
     git:
       url: https://github.com/kuhyx/utils
-      ref: crdt_sync_flutter-v0.3.5
+      ref: crdt_sync_flutter-v0.5.0
       path: crdt_sync_flutter
   crypto: 3.0.8
   # The shared palette, scales and components. Owns the tokens: there is
@@ -36,12 +36,12 @@ dependencies:
   path: 1.9.1
   path_provider: 2.1.6
   share_plus: 13.3.1
-  sqlite3: 3.8.0
+  sqlite3: 3.9.1
   # The shared "Sync settings" screen, identical across every app that syncs.
   sync_settings_ui:
     git:
       url: https://github.com/kuhyx/utils
-      ref: sync_settings_ui-v0.5.2
+      ref: sync_settings_ui-v0.6.1
       path: sync_settings_ui
 
 dev_dependencies:
