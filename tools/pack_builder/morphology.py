@@ -14,6 +14,7 @@ pack, so a rule can recover a word but never invent one.
 
 from __future__ import annotations
 
+import re
 from collections.abc import Callable, Iterator
 
 # Diminutive suffixes, paired with the endings the base may take. Spanish
@@ -32,6 +33,8 @@ _DIMINUTIVE_SUFFIXES = (
     "ecita",
 )
 _BASE_ENDINGS = ("o", "a", "e", "io", "ia", "")
+# A sung participle with its d dropped: esta'o, cansa\u2019a.
+_DROPPED_D = re.compile("['\u2019]([oa]s?)$")
 
 
 def diminutive_bases(surface: str) -> Iterator[str]:
@@ -41,17 +44,24 @@ def diminutive_bases(surface: str) -> Iterator[str]:
         if not surface.endswith(suffix):
             continue
         stem = surface[: -len(suffix)]
-        if len(stem) < 3:
+        # 2-letter stems are allowed (ojitos -> ojo) but never bare: `os` is
+        # a pronoun, not the base of `ositos`.
+        if len(stem) < 2:
             continue
         for ending in _BASE_ENDINGS:
+            if not ending and len(stem) < 3:
+                continue
             candidate = stem + ending
-            if candidate and candidate != surface and candidate not in seen:
+            if candidate != surface and candidate not in seen:
                 seen.add(candidate)
                 yield candidate
 
 
 def elision_bases(surface: str) -> Iterator[str]:
     """Yield base forms for colloquially elided ``surface`` (``vamo``)."""
+    participle = _DROPPED_D.search(surface)
+    if participle:
+        yield f"{surface[: participle.start()]}d{participle.group(1)}"
     # -mos -> -mo is the common sung elision; restoring the s is safe because
     # the result must still be a known form to be accepted.
     if surface.endswith("mo"):

@@ -1,3 +1,5 @@
+import 'package:design_system/design_system.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lyricanki/models/track.dart';
@@ -5,6 +7,7 @@ import 'package:lyricanki/screens/review_screen.dart';
 import 'package:lyricanki/services/deck_session.dart';
 import 'package:lyricanki/services/pack/pack_reader.dart';
 import 'package:lyricanki/widgets/vocab_card_cell.dart';
+import 'package:lyricanki/widgets/vocab_card_tile.dart';
 
 import '../services/pack/pack_reader_test.dart' show buildPack;
 
@@ -107,6 +110,35 @@ void main() {
     session.pack.close();
   });
 
+  testWidgets('the unresolved sheet spans the phone and hugs its text', (
+    tester,
+  ) async {
+    // Pixel 6a: 411x914 dp. On device the sheet came up a third of the width
+    // and over half the height, a narrow empty column (2026-11-08).
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.625;
+    addTearDown(tester.view.reset);
+    final session = sessionWith('Corazón dididiri woah');
+    // The app's own theme: the default one hid the narrow sheet.
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildDarkTheme(),
+        home: ReviewScreen(session: session, onExport: () async => 'ok'),
+      ),
+    );
+    await tester.tap(find.text('2 words not in the dictionary'));
+    await tester.pumpAndSettle();
+    final sheet = tester.getSize(find.byType(BottomSheet));
+    final screen = tester.getSize(find.byType(Scaffold).first);
+    expect(sheet.width, screen.width);
+    expect(
+      tester.getSize(find.byType(UnresolvedWordsNote)).width,
+      screen.width,
+    );
+    expect(sheet.height, lessThan(screen.height / 4));
+    session.pack.close();
+  });
+
   testWidgets('omits the unresolved note when everything resolved', (
     tester,
   ) async {
@@ -138,6 +170,27 @@ void main() {
     await tester.pump();
     await tester.pumpAndSettle();
     expect(find.text('Exported 1 card'), findsOneWidget);
+    session.pack.close();
+  });
+
+  testWidgets('a mouse drag pages the cards on desktop', (tester) async {
+    // Flutter's default desktop scroll behaviour ignores mouse drags, so the
+    // Linux build was stuck on page 1 of the deck.
+    tester.view
+      ..physicalSize = const Size(1280, 720)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final session = sessionWith('Corazón está suave, vamos, dame las tus me');
+    await pump(tester, session);
+    final first = find.byKey(const ValueKey<String>('cell-0'));
+    expect(first.hitTestable(), findsOneWidget);
+    await tester.dragFrom(
+      const Offset(1000, 300),
+      const Offset(-900, 0),
+      kind: PointerDeviceKind.mouse,
+    );
+    await tester.pumpAndSettle();
+    expect(first.hitTestable(), findsNothing);
     session.pack.close();
   });
 }

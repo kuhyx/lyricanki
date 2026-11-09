@@ -76,7 +76,10 @@ class UnresolvedWordsNote extends StatelessWidget {
     final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.all(AppSpacing.md),
+      // min: in a bottom sheet a max Column claims 9/16 of the screen,
+      // leaving an empty slab under two lines of text.
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Text(

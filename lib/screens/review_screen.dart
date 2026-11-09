@@ -1,4 +1,5 @@
 import 'package:design_system/design_system.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:lyricanki/services/deck_session.dart';
 import 'package:lyricanki/widgets/vocab_card_cell.dart';
@@ -70,14 +71,21 @@ class _ReviewScreenState extends State<ReviewScreen> {
                   title: 'No words yet',
                   message: 'Pick a song to build a deck from it.',
                 )
-              : FitGrid(
-                  itemCount: entries.length,
-                  minSquare: 0.8,
-                  itemBuilder: (context, index) => VocabCardCell(
-                    key: ValueKey<String>('cell-$index'),
-                    card: entries[index].card,
-                    selected: entries[index].selected,
-                    onToggle: () => session.toggle(index),
+              // Desktop ignores mouse drags by default; without this the
+              // Linux build could not leave page 1 of the deck.
+              : ScrollConfiguration(
+                  behavior: ScrollConfiguration.of(context).copyWith(
+                    dragDevices: PointerDeviceKind.values.toSet(),
+                  ),
+                  child: FitGrid(
+                    itemCount: entries.length,
+                    minSquare: 0.8,
+                    itemBuilder: (context, index) => VocabCardCell(
+                      key: ValueKey<String>('cell-$index'),
+                      card: entries[index].card,
+                      selected: entries[index].selected,
+                      onToggle: () => session.toggle(index),
+                    ),
                   ),
                 ),
           bottomNavigationBar: SafeArea(
@@ -91,9 +99,15 @@ class _ReviewScreenState extends State<ReviewScreen> {
                     TextButton(
                       onPressed: () => showModalBottomSheet<void>(
                         context: context,
+                        showDragHandle: true,
+                        // Full width like the card sheet: on device the
+                        // sheet otherwise shrank to its text, half the screen.
                         builder: (_) => SafeArea(
-                          child: UnresolvedWordsNote(
-                            unresolved: session.unresolved,
+                          child: SizedBox(
+                            width: double.infinity,
+                            child: UnresolvedWordsNote(
+                              unresolved: session.unresolved,
+                            ),
                           ),
                         ),
                       ),

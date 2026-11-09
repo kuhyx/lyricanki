@@ -32,22 +32,32 @@ Future<String> _fetchLyrics(Object? id) async {
   }
 }
 
+/// `acceptance.dart <pack> <fixture.json>...`: checks all, exits 1 if any fail.
 Future<void> main(List<String> args) async {
-  final packPath = args[0];
+  final pack = PackReader.open(args[0]);
+  var failed = 0;
+  for (final path in args.skip(1)) {
+    stdout.writeln('--> $path');
+    if (!await _check(pack, path)) failed++;
+  }
+  if (failed > 0) {
+    stderr.writeln('FAIL: $failed of ${args.length - 1} fixtures failed.');
+    exit(1);
+  }
+}
+
+Future<bool> _check(PackReader pack, String path) async {
   final fixture =
-      jsonDecode(File(args[1]).readAsStringSync()) as Map<String, dynamic>;
+      jsonDecode(File(path).readAsStringSync()) as Map<String, dynamic>;
 
   final lyrics = await _fetchLyrics(fixture['lrclib_id']);
   final digest = sha256.convert(utf8.encode(lyrics)).toString();
   if (digest != fixture['plain_lyrics_sha256']) {
     stderr.writeln('FAIL: LRCLIB lyrics changed; re-measure the fixture.');
-    exit(1);
+    return false;
   }
 
-  final draft = DeckBuilder(
-    pack: PackReader.open(packPath),
-    languageCode: 'es',
-  ).build(lyrics);
+  final draft = DeckBuilder(pack: pack, languageCode: 'es').build(lyrics);
 
   final empty = draft.cards.where((c) => c.gloss.trim().isEmpty).toList();
   final unresolved = draft.unresolved.toList()..sort();
@@ -71,6 +81,6 @@ Future<void> main(List<String> args) async {
     stderr.writeln('FAIL: unresolved changed: $unresolved');
     ok = false;
   }
-  if (!ok) exit(1);
-  stdout.writeln('Acceptance passed.');
+  if (ok) stdout.writeln('Acceptance passed.');
+  return ok;
 }

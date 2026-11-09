@@ -70,3 +70,17 @@ def test_diminutive_generator_skips_duplicate_candidates() -> None:
 def test_diminutive_skips_a_short_stem_and_keeps_scanning() -> None:
     """`ito` has too short a stem; the loop must continue to later suffixes."""
     assert list(diminutive_bases("ito")) == []
+
+
+def test_recovers_a_plural_diminutive_with_a_two_letter_stem() -> None:
+    """`ojitos` (Me Enamoré) has the stem `oj`; its base `ojo` must card."""
+    assert recover("ojitos", lambda s: s == "ojo") == "ojo"
+
+
+def test_never_yields_a_bare_two_letter_stem() -> None:
+    assert "os" not in list(diminutive_bases("ositos"))
+
+
+def test_restores_the_dropped_d_of_a_sung_participle() -> None:
+    assert list(elision_bases("esta'o")) == ["estado"]
+    assert list(elision_bases("cansa\u2019a")) == ["cansada"]

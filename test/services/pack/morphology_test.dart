@@ -18,7 +18,15 @@ void main() {
     test('refuses a stem too short to be a real base', () {
       // "ito" alone leaves nothing; inventing a base from it would card noise.
       expect(diminutiveBases('ito'), isEmpty);
-      expect(diminutiveBases('avito'), isEmpty);
+      expect(diminutiveBases('mito'), isEmpty);
+    });
+
+    test('recovers ojo from the plural ojitos, a 2-letter stem', () {
+      expect(diminutiveBases('ojitos'), contains('ojo'));
+    });
+
+    test('never yields a bare 2-letter stem such as the pronoun os', () {
+      expect(diminutiveBases('ositos'), isNot(contains('os')));
     });
 
     test('never yields the surface itself', () {
@@ -34,6 +42,11 @@ void main() {
   group('elisionBases', () {
     test('restores the dropped s of a sung first person plural', () {
       expect(elisionBases('vamo'), <String>['vamos']);
+    });
+
+    test("restores the dropped d of a sung participle (esta'o)", () {
+      expect(elisionBases("esta'o"), <String>['estado']);
+      expect(elisionBases('cansa’a'), <String>['cansada']);
     });
 
     test('yields nothing for a word that does not end in -mo', () {

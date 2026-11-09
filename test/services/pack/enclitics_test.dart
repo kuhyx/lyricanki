@@ -8,12 +8,19 @@ Row row(String lemma, String pos) => (lemma: lemma, pos: pos);
 void main() {
   group('splitEnclitics', () {
     test('splits a double-pronoun cluster', () {
-      expect(splitEnclitics('dámelo'), contains('dá'));
+      expect(splitEnclitics('cómetelo'), contains('cóme'));
+    });
+
+    test('skips stems shorter than three letters, like the pack builder', () {
+      // `dímelo` must not split into `dí`: `di` is also the preterite of
+      // dar, and that row sorts first, so the card taught the wrong verb.
+      expect(splitEnclitics('dímelo'), isNot(contains('di')));
+      expect(splitEnclitics('dímelo'), contains('dime'));
     });
 
     test('offers the unaccented stem, since the accent is only there for the '
         'cluster', () {
-      expect(splitEnclitics('dámelo'), contains('da'));
+      expect(splitEnclitics('cómetelo'), contains('come'));
       expect(splitEnclitics('quítate'), contains('quita'));
     });
 
@@ -40,9 +47,21 @@ void main() {
     test('resolves dámelo to the verb dar', () {
       final got = resolveEnclitic(
         'dámelo',
-        (stem) => stem == 'da' ? <Row>[row('dar', 'verb')] : <Row>[],
+        (stem) => stem == 'dame' ? <Row>[row('dar', 'verb')] : <Row>[],
       );
       expect(got, row('dar', 'verb'));
+    });
+
+    test('resolves dímelo to decir, not the dar preterite di', () {
+      final got = resolveEnclitic(
+        'dímelo',
+        (stem) => switch (stem) {
+          'di' => <Row>[row('dar', 'verb'), row('decir', 'verb')],
+          'dime' => <Row>[row('decir', 'verb')],
+          _ => <Row>[],
+        },
+      );
+      expect(got, row('decir', 'verb'));
     });
 
     test('refuses the proper-noun reading rather than carding it', () {

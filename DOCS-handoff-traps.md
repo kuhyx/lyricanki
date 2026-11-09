@@ -19,6 +19,9 @@ The AnkiDroid re-import reported *"147 notes found, 1 new, 146 used to update
 existing"* against a collection that already held the notes, and left one
 deck. That is the dedup guarantee, measured on-device rather than argued.
 
+**Acceptance (2026-11-06):** `scripts/acceptance.sh <pack>` runs every fixture:
+Despacito 147, Dímelo `#4921515` 82, Me Enamoré `#3028204` 101.
+
 ## Two bugs were found and fixed on 2026-08-22 — do not reintroduce them
 
 1. **INTERNET permission.** Flutter's scaffold declares it only in

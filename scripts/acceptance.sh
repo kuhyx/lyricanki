@@ -13,8 +13,14 @@ set -euo pipefail
 
 readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly REPO_ROOT="$(dirname "$SCRIPT_DIR")"
-readonly FIXTURE="$REPO_ROOT/test/fixtures/despacito_36856755.json"
+# Usage: acceptance.sh [pack] [fixture.json...]; no fixtures = every one.
 PACK="${1:-$REPO_ROOT/tools/pack_builder/lyricanki-es.sqlite}"
+shift || true
+if (($# > 0)); then
+    FIXTURES=("$@")
+else
+    FIXTURES=("$REPO_ROOT"/test/fixtures/*.json)
+fi
 
 if [[ ! -f "$PACK" ]]; then
     echo "Error: pack not found at $PACK" >&2
@@ -23,4 +29,4 @@ if [[ ! -f "$PACK" ]]; then
 fi
 
 echo "==> acceptance (real pack, live LRCLIB)"
-dart run "$REPO_ROOT/tools/acceptance/acceptance.dart" "$PACK" "$FIXTURE"
+dart run "$REPO_ROOT/tools/acceptance/acceptance.dart" "$PACK" "${FIXTURES[@]}"

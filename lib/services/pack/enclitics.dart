@@ -28,14 +28,21 @@ const List<String> encliticPronouns = <String>[
   'os',
 ];
 
-/// Yields candidate stems for [surface], longest stem first.
+/// The shortest stem a split may leave.
+const int minStemLength = 3;
+
+/// Yields candidate stems for [surface], in [encliticPronouns] order.
 ///
 /// An accented imperative loses its accent when the pronouns come off
 /// (`dámelo` -> `da`, `quítate` -> `quita`), so accented vowels are also
 /// restored to their bare forms as a second candidate.
+///
+/// Stems under [minStemLength] are skipped as in `enclitics.py`: `dímelo` ->
+/// `di` matched the dar preterite. `dale`, `dime` are whole pack forms.
 Iterable<String> splitEnclitics(String surface) sync* {
   for (final pronoun in encliticPronouns) {
-    if (!surface.endsWith(pronoun) || surface.length <= pronoun.length) {
+    if (!surface.endsWith(pronoun) ||
+        surface.length - pronoun.length < minStemLength) {
       continue;
     }
     final stem = surface.substring(0, surface.length - pronoun.length);

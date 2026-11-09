@@ -27,7 +27,7 @@ CREATE TABLE senses (lemma TEXT, pos TEXT, gloss_en TEXT DEFAULT '', PRIMARY KEY
     <String>['tus', 'tu', 'adj'],
     <String>['suave', 'suave', 'adj'],
     <String>['vamos', 'ir', 'verb'],
-    <String>['da', 'dar', 'verb'],
+    <String>['dame', 'dar', 'verb'],
     <String>['las', 'lesen', 'verb'],
     <String>['las', 'la', 'article'],
   ];

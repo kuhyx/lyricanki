@@ -39,17 +39,27 @@ Iterable<String> diminutiveBases(String surface) sync* {
   for (final suffix in diminutiveSuffixes) {
     if (!surface.endsWith(suffix)) continue;
     final stem = surface.substring(0, surface.length - suffix.length);
-    if (stem.length < 3) continue;
+    // 2-letter stems are allowed (`ojitos` -> `ojo`) but never bare: `os`
+    // is a pronoun, not the base of `ositos`.
+    if (stem.length < 2) continue;
     for (final ending in baseEndings) {
+      if (ending.isEmpty && stem.length < 3) continue;
       final candidate = stem + ending;
-      if (candidate.isEmpty || candidate == surface) continue;
+      if (candidate == surface) continue;
       if (seen.add(candidate)) yield candidate;
     }
   }
 }
 
+/// Matches a sung participle with its `d` dropped: `esta'o`, `cansa’a`.
+final RegExp _droppedD = RegExp(r"['’]([oa]s?)$");
+
 /// Yields base forms for a colloquially elided [surface] (`vamo` -> `vamos`).
 Iterable<String> elisionBases(String surface) sync* {
+  final participle = _droppedD.firstMatch(surface);
+  if (participle != null) {
+    yield '${surface.substring(0, participle.start)}d${participle.group(1)}';
+  }
   // -mos -> -mo is the common sung elision. Restoring the s is safe because
   // the result must still be a known form to be accepted.
   if (surface.endsWith('mo')) {

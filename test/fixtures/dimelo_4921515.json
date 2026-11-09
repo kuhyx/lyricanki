@@ -1,0 +1,34 @@
+{
+  "_comment": [
+    "Acceptance fixture for the card-count gate, enclitic-heavy track. Q8",
+    "forbids committing lyrics, so this stores a HASH of the pinned lyrics plus",
+    "the derived expectations -- never the lyric text. See",
+    "despacito_36856755.json for the full contract."
+  ],
+  "lrclib_id": 4921515,
+  "track": "Dímelo",
+  "artist": "Enrique Iglesias",
+  "duration_seconds": 218,
+  "plain_lyrics_sha256": "9975e22e521208600d5758fcd3909c32d872c8819a16d1bedef0de7e697a4ebd",
+  "measured_2026_11_06": {
+    "lines": 51,
+    "unique_surface_forms": 88,
+    "resolved_lemma_pos_pairs": 82,
+    "unique_lemmas": 82
+  },
+  "expected_notes": 82,
+  "_expected_notes_note": [
+    "82 unique lemmas, all with a non-empty English gloss. The title word",
+    "`dimelo` (62 of the song's tokens) must resolve to decir. Before",
+    "2026-11-06 the Dart splitter took the 2-letter stem `di`, whose first pack",
+    "row is the dar preterite, and carded dar instead (83 cards, one wrong).",
+    "The fix ports the pack builder's 3-letter minimum stem to",
+    "lib/services/pack/enclitics.dart; `dime` then resolves to decir.",
+    "Other enclitics here: inventandote, mirandote, olvidate."
+  ],
+  "unresolved_surfaces": [],
+  "_unresolved_note": [
+    "Every surface resolves. If any surface joins this list, the pack or the",
+    "resolver regressed."
+  ]
+}
