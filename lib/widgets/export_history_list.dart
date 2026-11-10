@@ -35,16 +35,14 @@ class ExportHistoryList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView.builder(
-      padding: const EdgeInsets.only(bottom: AppSpacing.xxl * 2),
-      itemCount: entries.length + 1,
+      // No heading: the rows (song, card count, date) are the whole story.
+      padding: const EdgeInsets.only(
+        top: AppSpacing.sm,
+        bottom: AppSpacing.xxl * 2,
+      ),
+      itemCount: entries.length,
       itemBuilder: (context, index) {
-        if (index == 0) {
-          return const SectionHeader(
-            'Exported songs',
-            padding: SectionHeader.defaultPadding,
-          );
-        }
-        final entry = entries[index - 1];
+        final entry = entries[index];
         return _ExportRow(
           entry: entry,
           // The file is gone when Android clears external app storage, or
