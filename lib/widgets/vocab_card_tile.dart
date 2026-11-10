@@ -82,9 +82,18 @@ class UnresolvedWordsNote extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Text(
-            '${unresolved.length} words not in the dictionary',
-            style: theme.textTheme.titleSmall,
+          // Same glyph + count as the review screen's button that opens it.
+          Row(
+            children: <Widget>[
+              Icon(
+                Icons.help_outline,
+                size: 20,
+                semanticLabel:
+                    '${unresolved.length} words not in the dictionary',
+              ),
+              const SizedBox(width: AppSpacing.xs),
+              Text('${unresolved.length}', style: theme.textTheme.titleSmall),
+            ],
           ),
           const SizedBox(height: AppSpacing.xs),
           Text(
@@ -147,24 +156,63 @@ class WordListHeader extends StatelessWidget {
       note =
           'Rebuilt from the lyrics, so it may differ from the exported deck.';
     }
+    // Card glyph + count, then how far the list can be trusted: a tick for
+    // the exported cards, a rebuild glyph for a rebuild (error colour plus
+    // "≠ exported count" when they disagree), the pack glyph when there is
+    // nothing to rebuild from. The sentence is the glyph's spoken label.
+    final scheme = theme.colorScheme;
+    final (IconData glyph, Color colour) = switch (kind) {
+      WordListKind.exact => (Icons.verified_outlined, scheme.primary),
+      WordListKind.rebuilt => (Icons.autorenew, scheme.onSurfaceVariant),
+      WordListKind.rebuiltDiffers => (Icons.autorenew, scheme.error),
+      WordListKind.empty => (Icons.storage_outlined, scheme.error),
+    };
+    final style = theme.textTheme.titleMedium;
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: <Widget>[
-          Text(
-            empty ? 'Words' : 'Words ($count)',
-            style: theme.textTheme.titleMedium,
+          const Icon(Icons.style_outlined),
+          if (!empty) ...<Widget>[
+            const SizedBox(width: AppSpacing.xs),
+            Text('$count', style: style),
+          ],
+          const SizedBox(width: AppSpacing.sm),
+          Icon(
+            glyph,
+            key: const Key('word-list-kind'),
+            color: colour,
+            semanticLabel: note,
           ),
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            note,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
+          if (kind == WordListKind.rebuiltDiffers) ...<Widget>[
+            const SizedBox(width: AppSpacing.xs),
+            Text('≠ $cardCount', style: style?.copyWith(color: colour)),
+          ],
         ],
       ),
     );
   }
+
+  /// Which of the four trust states the list is in; what the glyph shows.
+  WordListKind get kind {
+    if (empty) return WordListKind.empty;
+    if (exact) return WordListKind.exact;
+    if (count != cardCount) return WordListKind.rebuiltDiffers;
+    return WordListKind.rebuilt;
+  }
+}
+
+/// How far a word list on the export detail screen can be trusted.
+enum WordListKind {
+  /// The cards exactly as exported.
+  exact,
+
+  /// Rebuilt from the lyrics, same size as the export.
+  rebuilt,
+
+  /// Rebuilt from the lyrics, and the count disagrees with the export.
+  rebuiltDiffers,
+
+  /// No list: exported before cards were recorded, and no pack to rebuild.
+  empty,
 }

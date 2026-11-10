@@ -1,11 +1,13 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:lyricanki/screens/pack_screen.dart';
+import 'package:lyricanki/services/attributions.dart';
 import 'package:lyricanki/services/pack/pack_store.dart';
 
 import 'real_async.dart';
@@ -39,8 +41,14 @@ void main() {
   testWidgets('offers a download when no pack is installed', (tester) async {
     final store = storeServing(utf8.encode('data'));
     await pump(tester, store);
-    expect(find.text('Download pack'), findsOneWidget);
-    expect(find.textContaining('Not installed'), findsOneWidget);
+    expect(find.byKey(const Key('pack-download')), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byKey(const Key('pack-download')),
+        matching: find.byIcon(Icons.download_outlined),
+      ),
+      findsOneWidget,
+    );
     store.close();
   });
 
@@ -49,9 +57,14 @@ void main() {
   ) async {
     final store = storeServing(utf8.encode('data'));
     await pump(tester, store);
-    await tester.runAsync(() => tester.tap(find.text('Download pack')));
-    await pumpUntil(tester, () => hasText('Remove pack'));
-    expect(find.text('Remove pack'), findsOneWidget);
+    await tester.runAsync(
+      () => tester.tap(find.byKey(const Key('pack-download'))),
+    );
+    await pumpUntil(
+      tester,
+      () => find.byKey(const Key('pack-remove')).evaluate().isNotEmpty,
+    );
+    expect(find.byKey(const Key('pack-remove')), findsOneWidget);
     expect(await store.hasPack('es'), isTrue);
     store.close();
   });
@@ -59,11 +72,21 @@ void main() {
   testWidgets('removing deletes the pack', (tester) async {
     final store = storeServing(utf8.encode('data'));
     await pump(tester, store);
-    await tester.runAsync(() => tester.tap(find.text('Download pack')));
-    await pumpUntil(tester, () => hasText('Remove pack'));
-    await tester.runAsync(() => tester.tap(find.text('Remove pack')));
-    await pumpUntil(tester, () => hasText('Download pack'));
-    expect(find.text('Download pack'), findsOneWidget);
+    await tester.runAsync(
+      () => tester.tap(find.byKey(const Key('pack-download'))),
+    );
+    await pumpUntil(
+      tester,
+      () => find.byKey(const Key('pack-remove')).evaluate().isNotEmpty,
+    );
+    await tester.runAsync(
+      () => tester.tap(find.byKey(const Key('pack-remove'))),
+    );
+    await pumpUntil(
+      tester,
+      () => find.byKey(const Key('pack-download')).evaluate().isNotEmpty,
+    );
+    expect(find.byKey(const Key('pack-download')), findsOneWidget);
     expect(await store.hasPack('es'), isFalse);
     store.close();
   });
@@ -88,7 +111,7 @@ void main() {
       directoryOverride: root,
     );
     await pump(tester, store);
-    await tester.tap(find.text('Download pack'));
+    await tester.tap(find.byKey(const Key('pack-download')));
     await tester.pump();
     expect(find.byType(LinearProgressIndicator), findsOneWidget);
     await tester.runAsync(
@@ -103,12 +126,18 @@ void main() {
   ) async {
     final store = storeServing(utf8.encode(''), status: 404);
     await pump(tester, store);
-    await tester.runAsync(() => tester.tap(find.text('Download pack')));
+    await tester.runAsync(
+      () => tester.tap(find.byKey(const Key('pack-download'))),
+    );
     await pumpUntil(
       tester,
-      () => find.textContaining('404').evaluate().isNotEmpty,
+      () => find.byKey(const Key('pack-error')).evaluate().isNotEmpty,
     );
-    expect(find.textContaining('404'), findsOneWidget);
+    // Glyph on screen, the HTTP cause spoken only.
+    final error = tester.widget<Icon>(find.byKey(const Key('pack-error')));
+    expect(error.icon, Icons.cloud_off_outlined);
+    expect(error.semanticLabel, contains('404'));
+    expect(find.textContaining('404'), findsNothing);
     store.close();
   });
 
@@ -125,39 +154,47 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.runAsync(() => tester.tap(find.text('Download pack')));
+    await tester.runAsync(
+      () => tester.tap(find.byKey(const Key('pack-download'))),
+    );
     await pumpUntil(tester, () => changes > 0);
     expect(changes, 1);
     store.close();
   });
 
   group('attribution', () {
-    testWidgets('credits Wiktionary and names CC BY-SA, as required', (
-      tester,
-    ) async {
-      // Not decoration: the pack is CC BY-SA data, and the licence requires
-      // both attribution and naming the licence.
+    // Not decoration: the pack is CC BY-SA data, and the licence requires
+    // both attribution and naming the licence. The notices sit in the
+    // licence page behind the (c) glyph rather than painted on the screen.
+    Future<String> notices() async {
+      final entries = await LicenseRegistry.licenses.toList();
+      return <String>[
+        for (final e in entries)
+          for (final p in e.paragraphs) p.text,
+      ].join('\n');
+    }
+
+    testWidgets('the (c) glyph opens the licence page', (tester) async {
       final store = storeServing(utf8.encode('data'));
       await pump(tester, store);
-      expect(find.textContaining('Wiktionary'), findsOneWidget);
-      expect(find.textContaining('kaikki.org'), findsOneWidget);
-      expect(find.textContaining('CC BY-SA'), findsOneWidget);
+      await tester.tap(find.byKey(const Key('pack-credits')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.byType(LicensePage), findsOneWidget);
       store.close();
     });
 
-    testWidgets('credits LRCLIB for the lyrics', (tester) async {
-      final store = storeServing(utf8.encode('data'));
-      await pump(tester, store);
-      expect(find.textContaining('LRCLIB'), findsOneWidget);
-      store.close();
-    });
-
-    testWidgets('states that lyrics are not stored or shared', (tester) async {
-      // Q8: personal use only, no lyrics leave the device.
-      final store = storeServing(utf8.encode('data'));
-      await pump(tester, store);
-      expect(find.textContaining('never stored or shared'), findsOneWidget);
-      store.close();
-    });
+    test(
+      'credits Wiktionary via kaikki.org under CC BY-SA, and LRCLIB',
+      () async {
+        registerAttributions();
+        registerAttributions(); // idempotent: a second visit adds nothing
+        final text = await notices();
+        expect(text, contains('Wiktionary via kaikki.org'));
+        expect(text, contains('CC BY-SA'));
+        expect(text, contains('LRCLIB'));
+        expect('Wiktionary via kaikki.org'.allMatches(text), hasLength(1));
+      },
+    );
   });
 }

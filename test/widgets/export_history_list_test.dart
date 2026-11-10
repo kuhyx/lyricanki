@@ -41,13 +41,13 @@ void main() {
   testWidgets('marks a row whose file is gone', (tester) async {
     await pump(tester, [entry(1, 'Gone', path: '/gone.apkg')]);
 
-    expect(find.text('File removed — tap to rebuild'), findsOneWidget);
+    expect(find.byIcon(Icons.refresh), findsOneWidget);
   });
 
   testWidgets('shows the card count when the file is present', (tester) async {
     await pump(tester, [entry(1, 'Despacito')]);
 
-    expect(find.text('147 cards · 2026-08-22'), findsOneWidget);
+    expect(find.text('147 · 2026-08-22'), findsOneWidget);
   });
 
   testWidgets('reports the tapped entry', (tester) async {

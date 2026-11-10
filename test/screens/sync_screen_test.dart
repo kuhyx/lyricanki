@@ -89,19 +89,15 @@ void main() {
     expect(kServerClientId, startsWith('845446124781-'));
   });
 
-  test('explains the dark Google button on desktop, and not on Android', () {
-    // On Linux with no Desktop client id the button is dark and must say why
-    // -- a silently-absent control reads as a bug. On Android
-    // googleSupported is true and the reason is null.
+  test('offers Google sign-in on Android only', () {
+    // Linux has no Desktop client id, so the Google button is left out
+    // rather than shown dark with a sentence (textgate rule).
     debugDefaultTargetPlatformOverride = TargetPlatform.linux;
     addTearDown(() => debugDefaultTargetPlatformOverride = null);
     expect(SyncScreen.googleSupported, isFalse);
-    expect(SyncScreen.googleReason, isNotNull);
-    expect(SyncScreen.googleReason, contains('password'));
 
     debugDefaultTargetPlatformOverride = TargetPlatform.android;
     expect(SyncScreen.googleSupported, isTrue);
-    expect(SyncScreen.googleReason, isNull);
     debugDefaultTargetPlatformOverride = null;
   });
 }

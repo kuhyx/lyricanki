@@ -59,7 +59,9 @@ class _TrackPickerScreenState extends State<TrackPickerScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Find a song')),
+      appBar: AppBar(
+        title: const Icon(Icons.search, semanticLabel: 'Find a song'),
+      ),
       body: Column(
         children: [
           Padding(
@@ -70,8 +72,7 @@ class _TrackPickerScreenState extends State<TrackPickerScreen> {
               textInputAction: TextInputAction.search,
               onSubmitted: (_) => _search(),
               decoration: InputDecoration(
-                labelText: 'Song or artist',
-                hintText: 'Despacito',
+                prefixIcon: const Icon(Icons.library_music_outlined),
                 suffixIcon: IconButton(
                   icon: const Icon(Icons.search),
                   onPressed: _searching ? null : _search,
@@ -88,20 +89,23 @@ class _TrackPickerScreenState extends State<TrackPickerScreen> {
 
   Widget _body(BuildContext context) {
     if (_error != null) {
-      return EmptyState(
-        icon: Icons.cloud_off_outlined,
-        title: 'Search failed',
-        message: _error!,
+      // The cause is spoken only: on screen the offline glyph says it.
+      return Semantics(
+        label: _error,
+        child: const EmptyState(
+          icon: Icons.cloud_off_outlined,
+          title: '',
+          message: '',
+        ),
       );
     }
     if (_results.isEmpty) {
       return EmptyState(
-        icon: Icons.library_music_outlined,
-        title: _searched ? 'Nothing with lyrics' : 'Search for a song',
-        message: _searched
-            ? 'LRCLIB has no lyrics for that search. Try the artist too.'
-            : 'Several recordings usually share a title, so pick the exact '
-                  'one you want — versions differ, sometimes in language.',
+        icon: _searched
+            ? Icons.music_off_outlined
+            : Icons.library_music_outlined,
+        title: '',
+        message: '',
       );
     }
     return ListView.builder(

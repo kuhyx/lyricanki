@@ -53,30 +53,30 @@ class _ReviewScreenState extends State<ReviewScreen> {
         final entries = session.entries;
         return Scaffold(
           appBar: AppBar(
-            title: Text(session.track?.name ?? 'Review'),
+            title: Text(session.track?.name ?? ''),
             actions: <Widget>[
-              TextButton(
+              IconButton(
+                icon: const Icon(Icons.select_all, semanticLabel: 'All'),
                 onPressed: session.selectAll,
-                child: const Text('All'),
               ),
-              TextButton(
+              IconButton(
+                icon: const Icon(Icons.deselect, semanticLabel: 'None'),
                 onPressed: session.selectNone,
-                child: const Text('None'),
               ),
             ],
           ),
           body: entries.isEmpty
               ? const EmptyState(
                   icon: Icons.translate_outlined,
-                  title: 'No words yet',
-                  message: 'Pick a song to build a deck from it.',
+                  title: '',
+                  message: '',
                 )
               // Desktop ignores mouse drags by default; without this the
               // Linux build could not leave page 1 of the deck.
               : ScrollConfiguration(
-                  behavior: ScrollConfiguration.of(context).copyWith(
-                    dragDevices: PointerDeviceKind.values.toSet(),
-                  ),
+                  behavior: ScrollConfiguration.of(
+                    context,
+                  ).copyWith(dragDevices: PointerDeviceKind.values.toSet()),
                   child: FitGrid(
                     itemCount: entries.length,
                     minSquare: 0.8,
@@ -96,7 +96,15 @@ class _ReviewScreenState extends State<ReviewScreen> {
                 children: <Widget>[
                   if (session.unresolved.isNotEmpty)
                     // Surfaced, not dropped: the canary for a pack regression.
-                    TextButton(
+                    TextButton.icon(
+                      key: const Key('review-unresolved'),
+                      icon: Icon(
+                        Icons.help_outline,
+                        semanticLabel:
+                            '${session.unresolved.length} words not in the '
+                            'dictionary',
+                      ),
+                      label: Text('${session.unresolved.length}'),
                       onPressed: () => showModalBottomSheet<void>(
                         context: context,
                         showDragHandle: true,
@@ -111,12 +119,11 @@ class _ReviewScreenState extends State<ReviewScreen> {
                           ),
                         ),
                       ),
-                      child: Text(
-                        '${session.unresolved.length} words not in the '
-                        'dictionary',
-                      ),
                     ),
+                  // Download glyph + the card count that will ship; the
+                  // spinner replaces the glyph while the file is written.
                   FilledButton.icon(
+                    key: const Key('review-export'),
                     onPressed: _exporting || session.selectedCount == 0
                         ? null
                         : _export,
@@ -125,12 +132,12 @@ class _ReviewScreenState extends State<ReviewScreen> {
                             dimension: AppSpacing.md,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Icon(Icons.download_outlined),
-                    label: Text(
-                      _exporting
-                          ? 'Exporting…'
-                          : 'Export ${session.selectedCount} cards',
-                    ),
+                        : Icon(
+                            Icons.download_outlined,
+                            semanticLabel:
+                                'Export ${session.selectedCount} cards',
+                          ),
+                    label: Text('${session.selectedCount}'),
                   ),
                 ],
               ),

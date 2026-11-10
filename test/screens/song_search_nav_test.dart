@@ -24,7 +24,13 @@ void main() {
     // without needing a restart.
     final store = storeIn(root);
     await pumpHome(tester, store);
-    expect(find.text('No dictionary yet'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(Center),
+        matching: find.byIcon(Icons.storage_outlined),
+      ),
+      findsOneWidget,
+    );
 
     await tester.tap(
       find.descendant(
@@ -38,7 +44,7 @@ void main() {
     writePack('${root.path}/packs/lyricanki-es.sqlite');
     await actAsync(tester, tester.pageBack);
 
-    expect(find.text('Ready'), findsOneWidget);
+    expect(find.byIcon(Icons.library_music_outlined), findsOneWidget);
     store.close();
   });
 
@@ -54,7 +60,7 @@ void main() {
     expect(find.byType(VocabCardCell), findsWidgets);
 
     await actAsync(tester, tester.pageBack);
-    expect(find.text('Ready'), findsOneWidget);
+    expect(find.byIcon(Icons.library_music_outlined), findsOneWidget);
     store.close();
   });
 

@@ -85,11 +85,11 @@ class _ExportRow extends StatelessWidget {
             : null,
       ),
       subtitle: Text(
-        missing
-            ? 'File removed — tap to rebuild'
-            : '${entry.cardCount} cards · ${_formatDate(entry.exportedAt)}',
+        missing ? '' : '${entry.cardCount} · ${_formatDate(entry.exportedAt)}',
       ),
-      trailing: const Icon(Icons.chevron_right),
+      trailing: missing
+          ? Icon(Icons.refresh, color: theme.colorScheme.error)
+          : const Icon(Icons.chevron_right),
       onTap: onTap,
     );
   }
@@ -118,7 +118,6 @@ class HomeBody extends StatelessWidget {
     required this.packReady,
     required this.entries,
     required this.onOpen,
-    this.status,
     super.key,
   });
 
@@ -131,31 +130,21 @@ class HomeBody extends StatelessWidget {
   /// Opens one row.
   final void Function(ExportEntry) onOpen;
 
-  /// A transient message (an export result, a sync outcome, an error).
-  final String? status;
-
   @override
   Widget build(BuildContext context) {
     if (!packReady) {
       return const Center(
-        child: EmptyState(
-          icon: Icons.storage_outlined,
-          title: 'No dictionary yet',
-          message:
-              'Download the dictionary pack before building a deck. '
-              'Tap the storage icon above.',
-        ),
+        child: EmptyState(icon: Icons.storage_outlined, title: '', message: ''),
       );
     }
     if (entries.isEmpty) {
-      return Center(
+      // Sync and fetch outcomes show as the app-bar status glyph, so the
+      // empty state stays a bare glyph.
+      return const Center(
         child: EmptyState(
           icon: Icons.library_music_outlined,
-          title: 'Ready',
-          message:
-              status ??
-              'Search for a song to build a vocabulary deck from every '
-                  'word in it.',
+          title: '',
+          message: '',
         ),
       );
     }

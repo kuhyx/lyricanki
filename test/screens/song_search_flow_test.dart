@@ -30,7 +30,7 @@ void main() {
     await pickTrack(tester);
 
     expect(find.byType(VocabCardCell), findsWidgets);
-    expect(find.textContaining('Export'), findsOneWidget);
+    expect(find.byKey(const Key('review-export')), findsOneWidget);
 
     await actAsync(
       tester,
@@ -73,7 +73,10 @@ void main() {
     await pumpHome(tester, store, client: client);
     await pickTrack(tester);
 
-    expect(find.textContaining('503'), findsOneWidget);
+    // A failure glyph in the app bar; the cause is spoken, never painted.
+    final glyph = tester.widget<Icon>(find.byIcon(Icons.cloud_off_outlined));
+    expect(glyph.semanticLabel, contains('503'));
+    expect(find.textContaining('503'), findsNothing);
     store.close();
   });
 
@@ -83,20 +86,21 @@ void main() {
     await pumpHome(tester, store);
     await pickTrack(tester);
 
-    final label = tester
-        .widget<Text>(find.textContaining(RegExp(r'^Export \d+ cards$')))
-        .data!;
-    final before = int.parse(RegExp(r'\d+').firstMatch(label)!.group(0)!);
+    final count = find.descendant(
+      of: find.byKey(const Key('review-export')),
+      matching: find.byType(Text),
+    );
+    final before = int.parse(tester.widget<Text>(count).data!);
     await tester.tap(find.byType(VocabCardCell).first);
     await tester.pump();
-    expect(find.text('Export ${before - 1} cards'), findsOneWidget);
+    expect(tester.widget<Text>(count).data, '${before - 1}');
 
     await actAsync(
       tester,
       () => tester.tap(find.byType(FilledButton)),
       settleMs: 200,
     );
-    expect(find.textContaining('Exported ${before - 1} cards'), findsOneWidget);
+    expect(find.byType(SnackBar), findsOneWidget);
     store.close();
   });
 

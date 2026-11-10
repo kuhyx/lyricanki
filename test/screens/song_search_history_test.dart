@@ -91,7 +91,7 @@ void main() {
     await pumpHome(tester, storeIn(root), history: history, share: share);
     await tester.tap(inList('Despacito'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Open in AnkiDroid'));
+    await tester.tap(find.byIcon(Icons.share_outlined));
     await tester.pumpAndSettle();
 
     expect(share.shared, hasLength(1));
@@ -106,12 +106,12 @@ void main() {
     await tester.pumpAndSettle();
     // Opening the pack is real dart:io, which cannot complete inside the
     // test's fake-async zone.
-    await actAsync(tester, () => tester.tap(find.text('Rebuild from lyrics')));
+    await actAsync(tester, () => tester.tap(find.byIcon(Icons.refresh)));
 
     // Lands on the review screen for the same song, with no network call:
     // the lyrics travelled with the history row precisely so this works.
     expect(find.byType(ExportHistoryList), findsNothing);
-    expect(find.textContaining('Export'), findsOneWidget);
+    expect(find.byKey(const Key('review-export')), findsOneWidget);
   });
 
   testWidgets('hiding records the flag without deleting the row', (
@@ -132,7 +132,10 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byIcon(Icons.visibility_off_outlined));
     await tester.pumpAndSettle();
-    await actAsync(tester, () => tester.tap(find.text('Hide')));
+    await actAsync(
+      tester,
+      () => tester.tap(find.byKey(const Key('confirm-ok'))),
+    );
 
     // Hidden, never deleted: the record of a real export survives, so the
     // row comes back if the song is exported again.
@@ -153,7 +156,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.byIcon(Icons.visibility_off_outlined));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Cancel'));
+    await tester.tap(find.byKey(const Key('confirm-cancel')));
     await tester.pumpAndSettle();
 
     expect(history.visible(), hasLength(1));
@@ -173,8 +176,11 @@ void main() {
     );
     await tester.tap(inList('Despacito'));
     await tester.pumpAndSettle();
-    await actAsync(tester, () => tester.tap(find.text('Rebuild from lyrics')));
-    await actAsync(tester, () => tester.tap(find.textContaining('Export')));
+    await actAsync(tester, () => tester.tap(find.byIcon(Icons.refresh)));
+    await actAsync(
+      tester,
+      () => tester.tap(find.byKey(const Key('review-export'))),
+    );
     await actAsync(tester, () => tester.pageBack());
 
     expect(find.byType(ExportHistoryList), findsOneWidget);

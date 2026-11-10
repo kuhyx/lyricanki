@@ -58,7 +58,7 @@ void main() {
     var shared = 0;
     await pump(tester, onShare: () async => shared++);
 
-    await tester.tap(find.text('Open in AnkiDroid'));
+    await tester.tap(find.byIcon(Icons.share_outlined));
 
     expect(shared, 1);
   });
@@ -66,16 +66,16 @@ void main() {
   testWidgets('hides the share button when the file is gone', (tester) async {
     await pump(tester, which: entry(path: '/gone.apkg'));
 
-    expect(find.text('Open in AnkiDroid'), findsNothing);
-    expect(find.text('Removed'), findsOneWidget);
-    expect(find.text('Rebuild deck'), findsOneWidget);
+    expect(find.byIcon(Icons.share_outlined), findsNothing);
+    expect(find.byIcon(Icons.delete_outline), findsOneWidget);
+    expect(find.byType(OutlinedButton), findsOneWidget);
   });
 
   testWidgets('rebuilds on request', (tester) async {
     var rebuilt = 0;
     await pump(tester, onRebuild: () async => rebuilt++);
 
-    await tester.tap(find.text('Rebuild from lyrics'));
+    await tester.tap(find.byIcon(Icons.refresh));
 
     expect(rebuilt, 1);
   });
@@ -88,7 +88,9 @@ void main() {
     final button = tester.widget<OutlinedButton>(find.byType(OutlinedButton));
     expect(button.onPressed, isNull);
     expect(
-      find.text('Download the dictionary pack to rebuild this deck.'),
+      find.byWidgetPredicate(
+        (w) => w is Icon && w.semanticLabel == 'Dictionary pack missing',
+      ),
       findsOneWidget,
     );
   });
@@ -99,14 +101,14 @@ void main() {
 
     await tester.tap(find.byIcon(Icons.visibility_off_outlined));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Cancel'));
+    await tester.tap(find.byKey(const Key('confirm-cancel')));
     await tester.pumpAndSettle();
 
     expect(hidden, 0, reason: 'cancelling must not hide the row');
 
-    await tester.tap(find.byIcon(Icons.visibility_off_outlined));
+    await tester.tap(find.byIcon(Icons.visibility_off_outlined).first);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Hide'));
+    await tester.tap(find.byKey(const Key('confirm-ok')));
     await tester.pumpAndSettle();
 
     expect(hidden, 1);

@@ -43,6 +43,12 @@ Future<void> pump(
   ),
 );
 
+/// The card count on the export button: download glyph + number.
+Finder exportCount(String count) => find.descendant(
+  of: find.byKey(const Key('review-export')),
+  matching: find.text(count),
+);
+
 void main() {
   testWidgets('lists every candidate word, ticked by default', (tester) async {
     // Q3: nothing is filtered out; the user unticks what they already know.
@@ -50,7 +56,7 @@ void main() {
     await pump(tester, session);
     expect(find.byType(VocabCardCell), findsNWidgets(2));
     expect(find.textContaining('corazón'), findsOneWidget);
-    expect(find.text('Export 2 cards'), findsOneWidget);
+    expect(exportCount('2'), findsOneWidget);
     session.pack.close();
   });
 
@@ -72,16 +78,16 @@ void main() {
     await pump(tester, session);
     await tester.tap(find.byType(VocabCardCell).first);
     await tester.pump();
-    expect(find.text('Export 1 cards'), findsOneWidget);
+    expect(exportCount('1'), findsOneWidget);
     session.pack.close();
   });
 
   testWidgets('None unticks everything and disables export', (tester) async {
     final session = sessionWith('Corazón suave');
     await pump(tester, session);
-    await tester.tap(find.text('None'));
+    await tester.tap(find.byIcon(Icons.deselect));
     await tester.pump();
-    expect(find.text('Export 0 cards'), findsOneWidget);
+    expect(exportCount('0'), findsOneWidget);
     final button = tester.widget<FilledButton>(find.byType(FilledButton));
     expect(button.onPressed, isNull);
     session.pack.close();
@@ -90,11 +96,11 @@ void main() {
   testWidgets('All re-ticks everything', (tester) async {
     final session = sessionWith('Corazón suave');
     await pump(tester, session);
-    await tester.tap(find.text('None'));
+    await tester.tap(find.byIcon(Icons.deselect));
     await tester.pump();
-    await tester.tap(find.text('All'));
+    await tester.tap(find.byIcon(Icons.select_all));
     await tester.pump();
-    expect(find.text('Export 2 cards'), findsOneWidget);
+    expect(exportCount('2'), findsOneWidget);
     session.pack.close();
   });
 
@@ -104,7 +110,7 @@ void main() {
     // A real Spanish word here means the pack regressed, so it is surfaced.
     final session = sessionWith('Corazón dididiri woah');
     await pump(tester, session);
-    await tester.tap(find.text('2 words not in the dictionary'));
+    await tester.tap(find.byKey(const Key('review-unresolved')));
     await tester.pumpAndSettle();
     expect(find.text('dididiri, woah'), findsOneWidget);
     session.pack.close();
@@ -126,7 +132,7 @@ void main() {
         home: ReviewScreen(session: session, onExport: () async => 'ok'),
       ),
     );
-    await tester.tap(find.text('2 words not in the dictionary'));
+    await tester.tap(find.byKey(const Key('review-unresolved')));
     await tester.pumpAndSettle();
     final sheet = tester.getSize(find.byType(BottomSheet));
     final screen = tester.getSize(find.byType(Scaffold).first);
@@ -144,7 +150,7 @@ void main() {
   ) async {
     final session = sessionWith('Corazón');
     await pump(tester, session);
-    expect(find.textContaining('not in the dictionary'), findsNothing);
+    expect(find.byKey(const Key('review-unresolved')), findsNothing);
     session.pack.close();
   });
 
@@ -158,8 +164,8 @@ void main() {
   testWidgets('falls back to a generic title with no track', (tester) async {
     final session = sessionWith('');
     await pump(tester, session);
-    expect(find.text('Review'), findsOneWidget);
-    expect(find.text('No words yet'), findsOneWidget);
+    expect(find.byType(AppBar), findsOneWidget);
+    expect(find.byIcon(Icons.translate_outlined), findsOneWidget);
     session.pack.close();
   });
 

@@ -55,7 +55,8 @@ void main() {
         _wrap(const UnresolvedWordsNote(unresolved: <String>['ay', 'oh'])),
       );
 
-      expect(find.text('2 words not in the dictionary'), findsOneWidget);
+      expect(find.byIcon(Icons.help_outline), findsOneWidget);
+      expect(find.text('2'), findsOneWidget);
       expect(find.text('ay, oh'), findsOneWidget);
     });
 
@@ -81,8 +82,9 @@ void main() {
         ),
       );
 
-      expect(find.text('Words (3)'), findsOneWidget);
-      expect(find.textContaining('exactly as they were exported'), findsOne);
+      expect(find.text('3'), findsOneWidget);
+      expect(kindOf(tester), WordListKind.exact);
+      expect(find.byIcon(Icons.verified_outlined), findsOneWidget);
     });
 
     testWidgets('flags a rebuild that disagrees with the export', (
@@ -101,7 +103,9 @@ void main() {
 
       // The count sits directly under the "Cards" stat, so a silent
       // disagreement would read as a bug in one of the two numbers.
-      expect(find.textContaining('147 words now, against 120'), findsOne);
+      expect(kindOf(tester), WordListKind.rebuiltDiffers);
+      expect(find.text('147'), findsOneWidget);
+      expect(find.text('≠ 120'), findsOneWidget);
     });
 
     testWidgets('explains an empty list rather than showing a blank', (
@@ -118,8 +122,9 @@ void main() {
         ),
       );
 
-      expect(find.text('Words'), findsOneWidget);
-      expect(find.textContaining('before lyricanki recorded'), findsOne);
+      expect(kindOf(tester), WordListKind.empty);
+      expect(find.byIcon(Icons.storage_outlined), findsOneWidget);
+      expect(find.text('0'), findsNothing);
     });
 
     testWidgets('does not cite a mismatch when the counts agree', (
@@ -136,8 +141,11 @@ void main() {
         ),
       );
 
-      expect(find.textContaining('may differ'), findsOne);
-      expect(find.textContaining('against'), findsNothing);
+      expect(kindOf(tester), WordListKind.rebuilt);
+      expect(find.textContaining('≠'), findsNothing);
     });
   });
 }
+
+WordListKind kindOf(WidgetTester tester) =>
+    tester.widget<WordListHeader>(find.byType(WordListHeader)).kind;

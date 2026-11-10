@@ -4,6 +4,7 @@ import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
 import 'package:lyricanki/models/export_entry.dart';
 import 'package:lyricanki/models/vocab_card.dart';
+import 'package:lyricanki/widgets/icon_confirm.dart';
 import 'package:lyricanki/widgets/vocab_card_tile.dart';
 
 /// What one exported song looks like up close: its stats, and what can be
@@ -84,8 +85,10 @@ class ExportDetailScreen extends StatelessWidget {
         title: Text(entry.name),
         actions: <Widget>[
           IconButton(
-            icon: const Icon(Icons.visibility_off_outlined),
-            tooltip: 'Hide from list',
+            icon: const Icon(
+              Icons.visibility_off_outlined,
+              semanticLabel: 'Hide from list',
+            ),
             onPressed: () => _confirmHide(context),
           ),
         ],
@@ -93,32 +96,55 @@ class ExportDetailScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.md),
         children: <Widget>[
-          _Stat(label: 'Artist', value: entry.artist),
-          _Stat(label: 'Cards', value: '${entry.cardCount}'),
-          _Stat(label: 'Words in lyrics', value: '${_wordCount(entry.lyrics)}'),
-          _Stat(label: 'Exported', value: _formatDateTime(entry.exportedAt)),
           _Stat(
-            label: 'File',
-            value: missing ? 'Removed' : entry.path,
+            icon: Icons.person_outline,
+            value: entry.artist,
+            semanticLabel: 'Artist',
+          ),
+          _Stat(
+            icon: Icons.style_outlined,
+            value: '${entry.cardCount}',
+            semanticLabel: 'Cards',
+          ),
+          _Stat(
+            icon: Icons.notes,
+            value: '${_wordCount(entry.lyrics)}',
+            semanticLabel: 'Words in lyrics',
+          ),
+          _Stat(
+            icon: Icons.event_outlined,
+            value: _formatDateTime(entry.exportedAt),
+            semanticLabel: 'Exported',
+          ),
+          _Stat(
+            icon: missing
+                ? Icons.delete_outline
+                : Icons.insert_drive_file_outlined,
+            value: missing ? '' : entry.path,
+            semanticLabel: missing ? 'Removed' : 'File',
+            iconColor: missing ? Theme.of(context).colorScheme.error : null,
           ),
           const SizedBox(height: AppSpacing.lg),
           if (!missing)
-            FilledButton.icon(
+            FilledButton(
               onPressed: onShare,
-              icon: const Icon(Icons.share_outlined),
-              label: const Text('Open in AnkiDroid'),
+              child: const Icon(
+                Icons.share_outlined,
+                semanticLabel: 'Open in AnkiDroid',
+              ),
             ),
           if (!missing) const SizedBox(height: AppSpacing.sm),
-          OutlinedButton.icon(
+          OutlinedButton(
             onPressed: packReady ? onRebuild : null,
-            icon: const Icon(Icons.refresh),
-            label: Text(missing ? 'Rebuild deck' : 'Rebuild from lyrics'),
+            child: const Icon(Icons.refresh, semanticLabel: 'Rebuild'),
           ),
           if (!packReady)
-            const Padding(
-              padding: EdgeInsets.only(top: AppSpacing.sm),
-              child: Text(
-                'Download the dictionary pack to rebuild this deck.',
+            Padding(
+              padding: const EdgeInsets.only(top: AppSpacing.sm),
+              child: Icon(
+                Icons.storage_outlined,
+                color: Theme.of(context).colorScheme.error,
+                semanticLabel: 'Dictionary pack missing',
               ),
             ),
           const SizedBox(height: AppSpacing.lg),
@@ -142,13 +168,10 @@ class ExportDetailScreen extends StatelessWidget {
     // on the element still being mounted, and the write in between is real
     // filesystem work -- so the lookup can fail exactly when the pop matters.
     final navigator = Navigator.of(context);
-    final confirmed = await confirmDestructive(
+    final confirmed = await confirmByIcon(
       context,
-      title: 'Hide this song?',
-      message:
-          'It disappears from the list. The exported file is kept, and '
-          'exporting the song again brings the row back.',
-      confirmLabel: 'Hide',
+      icon: Icons.visibility_off_outlined,
+      semanticLabel: 'Hide from list',
     );
     if (!confirmed) return;
     await onHide();
@@ -160,22 +183,37 @@ class ExportDetailScreen extends StatelessWidget {
 }
 
 class _Stat extends StatelessWidget {
-  const _Stat({required this.label, required this.value});
+  const _Stat({
+    required this.icon,
+    required this.value,
+    required this.semanticLabel,
+    this.iconColor,
+  });
 
-  final String label;
+  final IconData icon;
   final String value;
+  final String semanticLabel;
+  final Color? iconColor;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.md),
-      child: Column(
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          Text(label, style: theme.textTheme.labelMedium),
-          const SizedBox(height: AppSpacing.xs),
-          Text(value, style: theme.textTheme.bodyLarge),
+          Icon(icon, semanticLabel: semanticLabel, color: iconColor, size: 20),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                const SizedBox(height: 2),
+                Text(value, style: theme.textTheme.bodyLarge),
+              ],
+            ),
+          ),
         ],
       ),
     );

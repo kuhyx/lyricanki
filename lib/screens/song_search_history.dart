@@ -3,6 +3,7 @@ import 'package:lyricanki/models/export_entry.dart';
 import 'package:lyricanki/models/track.dart';
 import 'package:lyricanki/screens/deck_flow.dart';
 import 'package:lyricanki/screens/export_detail_screen.dart';
+import 'package:lyricanki/screens/home_status.dart';
 import 'package:lyricanki/screens/sync_screen.dart';
 import 'package:lyricanki/services/deck_session.dart';
 import 'package:lyricanki/services/export_history.dart';
@@ -44,8 +45,8 @@ mixin SongSearchHistory<T extends StatefulWidget> on State<T> {
   /// not signed in.
   Future<int?> runSync(ExportHistory history, String deviceId);
 
-  /// Shows [message] on the home screen.
-  void showStatus(String message);
+  /// Shows [status] in the home screen's app bar; null clears it.
+  void showStatus(HomeStatus? status);
 
   /// Merges this device's history with every other device's.
   ///
@@ -55,25 +56,27 @@ mixin SongSearchHistory<T extends StatefulWidget> on State<T> {
   Future<void> syncNow() async {
     final store = history;
     if (store == null) return;
-    showStatus('Syncing...');
+    showStatus(const HomeStatus(HomeStatusKind.syncing));
     try {
       final count = await runSync(store, deviceId);
       if (!mounted) return;
       if (count == null) {
         // Not being set up is a normal state, not an error -- offer the way
         // in rather than reporting a failure.
-        showStatus('Sync is not set up on this device.');
+        showStatus(null);
         await Navigator.of(context).push<void>(
           MaterialPageRoute<void>(builder: (_) => const SyncScreen()),
         );
         return;
       }
-      showStatus('Synced -- $count songs.');
+      showStatus(HomeStatus(HomeStatusKind.synced, count: count));
       refreshHistory();
     } on Exception catch (error) {
       // Offline, or a rejected token. The local history is untouched and the
-      // app keeps working, so this is a message rather than a crash.
-      if (mounted) showStatus('Sync failed: $error');
+      // app keeps working, so this is a glyph rather than a crash.
+      if (mounted) {
+        showStatus(HomeStatus(HomeStatusKind.failed, detail: '$error'));
+      }
     }
   }
 

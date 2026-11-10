@@ -74,7 +74,13 @@ void main() {
     // button is disabled rather than failing later with a SQLite error.
     final store = storeIn(root);
     await pump(tester, store);
-    expect(find.text('No dictionary yet'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(Center),
+        matching: find.byIcon(Icons.storage_outlined),
+      ),
+      findsOneWidget,
+    );
     final fab = tester.widget<FloatingActionButton>(
       find.byType(FloatingActionButton),
     );
@@ -85,7 +91,7 @@ void main() {
     installStubPack(root);
     final store = storeIn(root);
     await pump(tester, store);
-    expect(find.text('Ready'), findsOneWidget);
+    expect(find.byIcon(Icons.library_music_outlined), findsOneWidget);
     final fab = tester.widget<FloatingActionButton>(
       find.byType(FloatingActionButton),
     );
@@ -103,7 +109,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.text('Dictionary pack'), findsOneWidget);
+    expect(find.byIcon(Icons.storage_outlined), findsOneWidget);
   });
 
   testWidgets('opens the track picker when a pack is installed', (
@@ -114,7 +120,7 @@ void main() {
     await pump(tester, store);
     await tester.tap(find.byType(FloatingActionButton));
     await tester.pumpAndSettle();
-    expect(find.text('Find a song'), findsWidgets);
+    expect(find.byIcon(Icons.search), findsWidgets);
     expect(find.byType(TextField), findsOneWidget);
   });
 }

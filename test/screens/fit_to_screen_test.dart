@@ -75,15 +75,18 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(_scrollableOverflow(tester), 0);
-    final export = find.text('Export 147 cards');
-    expect(export, findsOneWidget);
+    Finder exportCount(String n) => find.descendant(
+      of: find.byKey(const Key('review-export')),
+      matching: find.text(n),
+    );
+    expect(exportCount('147'), findsOneWidget);
     // Primary action is on-screen and above the nav-bar inset.
     final y = tester.getBottomLeft(find.byType(FilledButton)).dy;
     expect(y, lessThanOrEqualTo(2400 / 2.625 - 63 / 2.625));
     // First tile toggles on tap.
     await tester.tap(find.byKey(const ValueKey<String>('cell-0')));
     await tester.pump();
-    expect(find.text('Export 146 cards'), findsOneWidget);
+    expect(exportCount('146'), findsOneWidget);
     // Detail lives behind long-press, not dropped.
     await tester.longPress(find.byKey(const ValueKey<String>('cell-1')));
     await tester.pumpAndSettle();
@@ -101,6 +104,6 @@ void main() {
     await tester.pumpAndSettle();
     expect(_scrollableOverflow(tester), 0);
     expect(find.byType(ListView), findsNothing);
-    expect(find.text('Download pack'), findsOneWidget);
+    expect(find.byKey(const Key('pack-download')), findsOneWidget);
   });
 }

@@ -2,13 +2,14 @@ import 'dart:async';
 
 import 'package:design_system/design_system.dart';
 import 'package:flutter/material.dart';
+import 'package:lyricanki/services/attributions.dart';
 import 'package:lyricanki/services/pack/pack_store.dart';
 
-/// Downloads the dictionary pack and carries the licence attribution.
+/// Downloads the dictionary pack and links the licence attribution.
 ///
 /// The attribution is not decoration: the pack is built from Wiktionary data
 /// via kaikki.org under **CC BY-SA**, which requires crediting the source and
-/// naming the licence. LRCLIB is credited because the lyrics come from there.
+/// naming the licence. See `attributions.dart`.
 class PackScreen extends StatefulWidget {
   /// Creates the pack screen.
   const PackScreen({
@@ -86,7 +87,12 @@ class _PackScreenState extends State<PackScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Dictionary pack')),
+      appBar: AppBar(
+        title: const Icon(
+          Icons.storage_outlined,
+          semanticLabel: 'Dictionary pack',
+        ),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(AppSpacing.md),
         child: Column(
@@ -109,16 +115,20 @@ class _PackScreenState extends State<PackScreen> {
             ],
             if (_error != null) ...<Widget>[
               const SizedBox(height: AppSpacing.sm),
-              Text(
-                _error!,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.error,
-                ),
+              // The cause is spoken only; on screen the offline glyph in the
+              // error colour sits under a download button that is live again.
+              Icon(
+                Icons.cloud_off_outlined,
+                key: const Key('pack-error'),
+                color: theme.colorScheme.error,
+                semanticLabel: _error,
               ),
             ],
-            const SizedBox(height: AppSpacing.md),
-            // Scrolls only if a very small screen cannot hold the credits.
-            const Expanded(child: SingleChildScrollView(child: _Attribution())),
+            const Spacer(),
+            const Align(
+              alignment: Alignment.centerLeft,
+              child: _CreditsButton(),
+            ),
           ],
         ),
       ),
@@ -134,19 +144,10 @@ class _PackScreenState extends State<PackScreen> {
         children: <Widget>[
           Icon(
             _installed ? Icons.check_circle_outline : Icons.download_outlined,
+            color: _installed ? theme.colorScheme.primary : null,
           ),
           const SizedBox(height: AppSpacing.sm),
-          Text(
-            'Spanish (${widget.language})',
-            style: theme.textTheme.titleSmall,
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            _installed
-                ? 'Installed. Words resolve offline.'
-                : 'Not installed. About 43 MB.',
-            style: theme.textTheme.bodySmall,
-          ),
+          Text(widget.language, style: theme.textTheme.titleSmall),
         ],
       ),
     ),
@@ -156,50 +157,41 @@ class _PackScreenState extends State<PackScreen> {
     margin: EdgeInsets.zero,
     child: Center(
       child: _installed
-          ? OutlinedButton.icon(
+          ? OutlinedButton(
+              key: const Key('pack-remove'),
               onPressed: _busy ? null : _delete,
-              icon: const Icon(Icons.delete_outline),
-              label: const Text('Remove pack'),
+              child: const Icon(
+                Icons.delete_outline,
+                semanticLabel: 'Remove pack',
+              ),
             )
-          : FilledButton.icon(
+          : FilledButton(
+              key: const Key('pack-download'),
               onPressed: _busy ? null : _download,
-              icon: const Icon(Icons.download_outlined),
-              label: const Text('Download pack'),
+              child: const Icon(
+                Icons.download_outlined,
+                semanticLabel: 'Download pack',
+              ),
             ),
     ),
   );
 }
 
-/// The licence notices the pack and lyrics sources require.
-class _Attribution extends StatelessWidget {
-  const _Attribution();
+/// Opens the licence notices the pack and lyrics sources require.
+///
+/// A tap on the (c) glyph is the ask: the notices sit in Flutter's licence
+/// page next to every package's licence, registered by
+/// [registerAttributions], instead of three paragraphs on every visit.
+class _CreditsButton extends StatelessWidget {
+  const _CreditsButton();
 
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final muted = theme.textTheme.bodySmall?.copyWith(
-      color: theme.colorScheme.onSurfaceVariant,
-    );
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: <Widget>[
-        Text('Credits', style: theme.textTheme.titleSmall),
-        const SizedBox(height: AppSpacing.sm),
-        Text(
-          'Dictionary data from Wiktionary via kaikki.org, used under '
-          'CC BY-SA 4.0 and the GFDL. Definitions fetched online come from '
-          'English Wiktionary under CC BY-SA 3.0 and the GFDL.',
-          style: muted,
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        Text('Lyrics from LRCLIB (lrclib.net).', style: muted),
-        const SizedBox(height: AppSpacing.sm),
-        Text(
-          'Decks are generated on this device for personal study. Lyrics are '
-          'never stored or shared by this app.',
-          style: muted,
-        ),
-      ],
-    );
-  }
+  Widget build(BuildContext context) => IconButton(
+    key: const Key('pack-credits'),
+    icon: const Icon(Icons.copyright, semanticLabel: 'Credits'),
+    onPressed: () {
+      registerAttributions();
+      showLicensePage(context: context);
+    },
+  );
 }

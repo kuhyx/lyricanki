@@ -34,7 +34,13 @@ LrclibClient clientFor(Object body) => LrclibClient(
 void main() {
   testWidgets('prompts for a search before anything is typed', (tester) async {
     await pump(tester, clientFor(<Map<String, dynamic>>[]));
-    expect(find.text('Search for a song'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(TextField),
+        matching: find.byIcon(Icons.library_music_outlined),
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('lists every matching recording, not just the first', (
@@ -125,7 +131,7 @@ void main() {
     await tester.enterText(find.byType(TextField), 'x');
     await tester.testTextInput.receiveAction(TextInputAction.done);
     await tester.pumpAndSettle();
-    expect(find.text('Nothing with lyrics'), findsOneWidget);
+    expect(find.byIcon(Icons.music_off_outlined), findsOneWidget);
   });
 
   testWidgets('reports a search failure instead of a blank list', (
@@ -138,8 +144,12 @@ void main() {
     await tester.enterText(find.byType(TextField), 'x');
     await tester.testTextInput.receiveAction(TextInputAction.done);
     await tester.pumpAndSettle();
-    expect(find.text('Search failed'), findsOneWidget);
-    expect(find.textContaining('503'), findsOneWidget);
+    expect(find.byIcon(Icons.cloud_off_outlined), findsOneWidget);
+    // The cause is spoken only, never painted.
+    final semantics = tester.ensureSemantics();
+    expect(find.bySemanticsLabel(RegExp('503')), findsOneWidget);
+    expect(find.textContaining('503'), findsNothing);
+    semantics.dispose();
   });
 
   testWidgets('ignores an empty query', (tester) async {
@@ -165,7 +175,12 @@ void main() {
       clientFor(<Map<String, dynamic>>[row(1, 'Despacito', 'Luis Fonsi')]),
     );
     await tester.enterText(find.byType(TextField), 'Despacito');
-    await tester.tap(find.byIcon(Icons.search));
+    await tester.tap(
+      find.descendant(
+        of: find.byType(TextField),
+        matching: find.byIcon(Icons.search),
+      ),
+    );
     await tester.pumpAndSettle();
     expect(find.text('#1'), findsOneWidget);
   });

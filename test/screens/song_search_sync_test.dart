@@ -61,9 +61,13 @@ void main() {
       await tester.tap(find.byIcon(Icons.sync));
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('Synced'), findsNothing);
-      // The status line shows on the empty state; with rows present the list
-      // stays, so the sync result is observed through the store instead.
+      // The outcome is an app-bar glyph plus the merged count, shown over
+      // the list as well as over an empty state.
+      expect(find.byIcon(Icons.cloud_done_outlined), findsOneWidget);
+      expect(
+        find.descendant(of: find.byType(AppBar), matching: find.text('4')),
+        findsOneWidget,
+      );
       expect(history.all(), hasLength(1));
     });
 

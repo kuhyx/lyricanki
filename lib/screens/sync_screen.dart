@@ -49,16 +49,6 @@ class SyncScreen extends StatelessWidget {
     desktopClientId: kDesktopClientId,
   );
 
-  /// Why the Google button is dark, when it is.
-  ///
-  /// Null on Android, where it works. On desktop the loopback flow is built
-  /// but has no Desktop OAuth client yet, and a silently-absent button there
-  /// would read as a bug rather than as a missing credential.
-  static String? get googleReason => googleSupported
-      ? null
-      : 'Google sign-in needs a desktop OAuth client, which is not set up '
-            'yet. Use the account password below.';
-
   @override
   Widget build(BuildContext context) => SyncSettingsScreen(
     accountLoader: loadAccount,
@@ -67,7 +57,9 @@ class SyncScreen extends StatelessWidget {
     sessionProbe: probeSession,
     firebaseFactory: openClient,
     googleFirebaseFactory: connectWithGoogle,
+    // No googleUnavailableReason: the shared package paints one as a
+    // sentence under a dark button (kuhy's textgate rule forbids it). Without
+    // it the Google button is left out where the platform has no flow.
     googleAvailable: googleSupported,
-    googleUnavailableReason: googleReason,
   );
 }

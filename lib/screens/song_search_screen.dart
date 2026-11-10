@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:lyricanki/models/export_entry.dart';
 import 'package:lyricanki/models/track.dart';
 import 'package:lyricanki/screens/deck_flow.dart';
+import 'package:lyricanki/screens/home_status.dart';
 import 'package:lyricanki/screens/pack_screen.dart';
 import 'package:lyricanki/screens/song_search_history.dart';
 import 'package:lyricanki/screens/track_picker_screen.dart';
@@ -69,7 +70,7 @@ class _SongSearchScreenState extends State<SongSearchScreen>
   List<ExportEntry> _entries = <ExportEntry>[];
   bool _packReady = false;
   bool _working = false;
-  String? _status;
+  HomeStatus? _status;
 
   @override
   void initState() {
@@ -113,7 +114,7 @@ class _SongSearchScreenState extends State<SongSearchScreen>
       (widget.syncHistory ?? _defaultSync)(store, device);
 
   @override
-  void showStatus(String message) => setState(() => _status = message);
+  void showStatus(HomeStatus? status) => setState(() => _status = status);
 
   @override
   void refreshHistory() {
@@ -176,7 +177,9 @@ class _SongSearchScreenState extends State<SongSearchScreen>
         onExport: _export,
       );
     } on LrclibException catch (error) {
-      if (mounted) setState(() => _status = error.message);
+      if (mounted) {
+        showStatus(HomeStatus(HomeStatusKind.failed, detail: error.message));
+      }
     } finally {
       if (mounted) setState(() => _working = false);
     }
@@ -203,24 +206,24 @@ class _SongSearchScreenState extends State<SongSearchScreen>
     );
     refreshHistory();
     await _share.shareApkg(path);
-    return 'Exported ${session.selectedCount} cards '
-        '(${(bytes / 1024).round()} KB) to $path';
+    return '${session.selectedCount} · ${(bytes / 1024).round()} KB';
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('lyricanki'),
         actions: <Widget>[
+          if (_status case final status?) HomeStatusGlyph(status: status),
           IconButton(
-            icon: const Icon(Icons.sync),
-            tooltip: 'Sync history',
+            icon: const Icon(Icons.sync, semanticLabel: 'Sync history'),
             onPressed: _working ? null : syncNow,
           ),
           IconButton(
-            icon: const Icon(Icons.storage_outlined),
-            tooltip: 'Dictionary pack',
+            icon: const Icon(
+              Icons.storage_outlined,
+              semanticLabel: 'Dictionary pack',
+            ),
             onPressed: _openPackScreen,
           ),
         ],
@@ -230,13 +233,11 @@ class _SongSearchScreenState extends State<SongSearchScreen>
           : HomeBody(
               packReady: _packReady,
               entries: _entries,
-              status: _status,
               onOpen: openEntry,
             ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: FloatingActionButton(
         onPressed: _packReady && !_working ? _pickAndBuild : null,
-        icon: const Icon(Icons.search),
-        label: const Text('Find a song'),
+        child: const Icon(Icons.search, semanticLabel: 'Find a song'),
       ),
     );
   }
