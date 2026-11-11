@@ -37,7 +37,8 @@ case "$*" in
   "shell stat -c %s "*) [[ -f $s/pushed ]] && cat "$s/pushed"; exit 0 ;;
   "push "*) stat -c %s "$2" > "$s/pushed"; exit 0 ;;
   "logcat -d"*) [[ -f $s/crash ]] && echo "FATAL EXCEPTION: main" \
-    && echo "Process: $FAKE_PKG, PID: 4242"; exit 0 ;;
+    && echo "Process: $FAKE_PKG, PID: 4242" \
+    && [[ -f $s/noisy ]] && seq 1 200000; exit 0 ;;
   *) exit 0 ;;
 esac
 """
@@ -153,4 +154,11 @@ def test_build_failure_fails(env: dict[str, str]) -> None:
 def test_install_not_updated_fails(env: dict[str, str]) -> None:
     pd = Path(env["PHONE_DEPLOY"])
     pd.write_text("#!/bin/bash\nexit 0\n")
+    assert _run(env).returncode != 0
+
+
+def test_crash_followed_by_long_log_fails(env: dict[str, str]) -> None:
+    """A real logcat keeps writing after the match; SIGPIPE must not hide it."""
+    (Path(env["FAKE_ADB_STATE"]) / "crash").touch()
+    (Path(env["FAKE_ADB_STATE"]) / "noisy").touch()
     assert _run(env).returncode != 0

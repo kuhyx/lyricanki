@@ -61,9 +61,12 @@ ensure_release_key() {
     install -m 600 "$LIVE_CHECKOUT/android/key.properties" "$props"
 }
 
+# Captured into a variable, not piped into head/grep -q: an early-exiting
+# reader SIGPIPEs the writer and pipefail turns that into a failure.
 last_update() {
-    phone shell dumpsys package "$PACKAGE" | tr -d '\r' \
-        | sed -n 's/^[[:space:]]*lastUpdateTime=//p' | head -1
+    local dump
+    dump="$(phone shell dumpsys package "$PACKAGE" | tr -d '\r')"
+    sed -n 's/^[[:space:]]*lastUpdateTime=//p' <<<"$dump" | sed -n 1p
 }
 
 push_pack() {
@@ -89,11 +92,16 @@ health_check() {
     [[ "$phone_size" == "$(stat -c %s "$pack")" ]] || die "pack missing or wrong size on phone"
 
     # Fresh launch, then look for a crash from this package since the clear.
-    phone logcat -c
-    phone shell am start -n "$PACKAGE/.MainActivity" >/dev/null
+    # -S force-stops first, so the pid check sees this launch, not the one
+    # phone_deploy made. Both buffers are cleared so an old crash cannot fail
+    # a later run.
+    phone logcat -b main -b crash -c
+    phone shell am start -S -n "$PACKAGE/.MainActivity" >/dev/null
     sleep "$SETTLE_SECS"
     [[ -n "$(phone shell pidof "$PACKAGE" | tr -d '\r')" ]] || die "$PACKAGE not running after launch"
-    if phone logcat -d -b crash -b main | grep -A1 'FATAL EXCEPTION' | grep -q "Process: $PACKAGE"; then
+    local log
+    log="$(phone logcat -d -b crash -b main | tr -d '\r')"
+    if [[ "$log" == *"Process: $PACKAGE,"* ]]; then
         die "$PACKAGE crashed on launch (see adb logcat -b crash)"
     fi
     echo "==> Health OK: installed (lastUpdateTime=$after), pack present, app running"
