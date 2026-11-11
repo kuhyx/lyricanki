@@ -6,3 +6,4 @@
 - lint: `flutter analyze`
 - coverage: `flutter test --reporter=compact --coverage`
 - coverage-gaps: `coverage-gaps coverage/lcov.info`
+- deploy: `scripts/deploy.sh`
