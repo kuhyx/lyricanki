@@ -1,3 +1,6 @@
+// phone-slot: not-shared-storage -- the directory comes from
+// getExternalStorageDirectory(), which is per-package
+// (Android/data/<applicationId>), so a slot build gets its own.
 import 'dart:io';
 
 import 'package:http/http.dart' as http;
