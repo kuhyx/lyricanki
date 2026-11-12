@@ -7,6 +7,7 @@ import 'package:lyricanki/screens/home_status.dart';
 import 'package:lyricanki/screens/sync_screen.dart';
 import 'package:lyricanki/services/deck_session.dart';
 import 'package:lyricanki/services/export_history.dart';
+import 'package:lyricanki/services/history_sync.dart';
 import 'package:lyricanki/services/pipeline/deck_builder.dart';
 
 /// The history half of the home screen: opening a row, hiding it, rebuilding
@@ -71,6 +72,12 @@ mixin SongSearchHistory<T extends StatefulWidget> on State<T> {
       }
       showStatus(HomeStatus(HomeStatusKind.synced, count: count));
       refreshHistory();
+    } on HistorySyncLocked {
+      // Nothing was pulled or pushed. The lock button asks for the shared
+      // passphrase and syncs again once it is saved.
+      if (mounted) {
+        showStatus(HomeStatus(HomeStatusKind.locked, onUnlock: syncNow));
+      }
     } on Exception catch (error) {
       // Offline, or a rejected token. The local history is untouched and the
       // app keeps working, so this is a glyph rather than a crash.

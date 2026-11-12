@@ -1,11 +1,13 @@
 import 'dart:io';
 
+import 'package:crdt_sync/crdt_sync.dart' show E2eLockReason;
 import 'package:crdt_sync_flutter/testing/fake_secure_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lyricanki/models/track.dart';
 import 'package:lyricanki/screens/sync_screen.dart';
 import 'package:lyricanki/services/export_history.dart';
+import 'package:lyricanki/services/history_sync.dart';
 import 'package:lyricanki/widgets/export_history_list.dart';
 
 import 'flow_harness.dart';
@@ -91,6 +93,42 @@ void main() {
       // Not configured is not an error: it routes to the settings screen
       // rather than reporting a failure the user cannot act on.
       expect(find.byType(SyncScreen), findsOneWidget);
+    });
+
+    testWidgets('asks for the passphrase when locked, then retries', (
+      tester,
+    ) async {
+      installFakeSecureStorage();
+      writePack('${root.path}/packs/lyricanki-es.sqlite');
+      final history = await seeded(tester, [_a]);
+      var calls = 0;
+
+      await pumpHome(
+        tester,
+        storeIn(root),
+        history: history,
+        syncHistory: (_, _) async {
+          // Locked until a passphrase is saved, then a normal merge.
+          if (++calls == 1) {
+            throw const HistorySyncLocked(E2eLockReason.needsPassphrase);
+          }
+          return 1;
+        },
+      );
+      await tester.tap(find.byIcon(Icons.sync));
+      await tester.pumpAndSettle();
+
+      // A lock, not a failure: nothing is broken, a key is missing.
+      expect(find.byIcon(Icons.cloud_off_outlined), findsNothing);
+      expect(find.byType(SyncScreen), findsNothing);
+      await tester.tap(find.byIcon(Icons.lock));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), 'shared-passphrase');
+      await tester.tap(find.byIcon(Icons.check));
+      await tester.pumpAndSettle();
+
+      expect(calls, 2, reason: 'saving the passphrase syncs again');
+      expect(find.byIcon(Icons.cloud_done_outlined), findsOneWidget);
     });
 
     testWidgets('survives being offline', (tester) async {

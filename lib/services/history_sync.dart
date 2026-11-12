@@ -1,5 +1,6 @@
 import 'package:crdt_sync/crdt_sync.dart';
 import 'package:crdt_sync_flutter/crdt_sync_flutter.dart';
+import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:lyricanki/services/export_history.dart';
 
 /// The shared `kuhy-syncs` project, so the history appears on every device.
@@ -52,6 +53,27 @@ const String kDesktopClientId = '';
 /// Where this app's logs live in the shared database.
 const String kSyncPathPrefix = 'lyricanki-sync/devices';
 
+/// Argon2id cost for a new encryption header; only tests lower it.
+@visibleForTesting
+Argon2Params e2eArgon2Params = Argon2Params.recommended;
+
+/// This device has no usable end-to-end key (no passphrase, a wrong one, or
+/// an unreadable header), so the sync pulled and pushed nothing.
+///
+/// Thrown rather than returned so the `Future<int?>` contract keeps meaning
+/// "merged count, or not signed in"; the home screen turns it into the lock
+/// button rather than a failure glyph.
+class HistorySyncLocked implements Exception {
+  /// Creates the signal for [reason].
+  const HistorySyncLocked(this.reason);
+
+  /// Why the key is unusable.
+  final E2eLockReason reason;
+
+  @override
+  String toString() => 'HistorySyncLocked(${reason.name})';
+}
+
 /// Builds a signed-in client, or null when this device is not set up.
 typedef FirebaseFactory = Future<FirebaseRestClient?> Function();
 
@@ -65,6 +87,9 @@ typedef FirebaseFactory = Future<FirebaseRestClient?> Function();
 /// Returns how many entries the history holds afterwards, or null when this
 /// device has no Firebase session. Not being set up is a normal state, not an
 /// error: the app keeps working, it just does not share.
+///
+/// Throws [HistorySyncLocked] when the device has a session but no usable
+/// end-to-end key.
 Future<int?> syncHistory({
   required ExportHistory history,
   required String deviceId,
@@ -73,10 +98,25 @@ Future<int?> syncHistory({
   final client = await (firebaseFactory ?? () => openSync(kSyncApp))();
   if (client == null) return null;
   try {
+    // Everything pushed is sealed under the shared crdt-sync passphrase; the
+    // first open also copies what plaintext builds left at the old prefix.
+    final e2e = await openEncryptedStoreFromKeystore(
+      store: client,
+      oldPrefix: kSyncPathPrefix,
+      params: e2eArgon2Params,
+    );
+    if (e2e is! E2eReady) {
+      // Fail closed: no pull, no push, never a plaintext fallback.
+      throw HistorySyncLocked(
+        e2e is E2eLocked ? e2e.reason : E2eLockReason.badHeader,
+      );
+    }
+    final layout = E2eLayout.of(kSyncPathPrefix);
     final merged = await syncLog(
-      client: client,
+      client: e2e.store,
       deviceId: deviceId,
-      pathPrefix: kSyncPathPrefix,
+      pathPrefix: layout.prefix,
+      revsPath: layout.revsPath,
       localLog: history.snapshot(),
       encode: logToJson,
       decode: logFromJson,

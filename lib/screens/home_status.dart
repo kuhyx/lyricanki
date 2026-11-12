@@ -1,3 +1,5 @@
+import 'package:crdt_sync_flutter/crdt_sync_flutter.dart'
+    show E2ePassphraseButton;
 import 'package:flutter/material.dart';
 
 /// What the home screen's last background action came to.
@@ -10,6 +12,10 @@ enum HomeStatusKind {
 
   /// A sync or a lyrics fetch failed; [HomeStatus.detail] says why.
   failed,
+
+  /// Sync is end-to-end encrypted and this device has no usable passphrase;
+  /// [HomeStatus.onUnlock] retries once one is saved.
+  locked,
 }
 
 /// A home-screen status as state rather than a sentence.
@@ -20,7 +26,7 @@ enum HomeStatusKind {
 @immutable
 class HomeStatus {
   /// Creates a status of [kind].
-  const HomeStatus(this.kind, {this.count, this.detail});
+  const HomeStatus(this.kind, {this.count, this.detail, this.onUnlock});
 
   /// Which outcome this is.
   final HomeStatusKind kind;
@@ -30,12 +36,16 @@ class HomeStatus {
 
   /// The cause, for [HomeStatusKind.failed]. Spoken, never painted.
   final String? detail;
+
+  /// Re-runs the sync after a passphrase is saved, for [HomeStatusKind.locked].
+  final VoidCallback? onUnlock;
 }
 
 /// The app-bar glyph for a [HomeStatus].
 ///
 /// Spinner while syncing; cloud-done in the primary colour plus the merged
-/// count; cloud-off in the error colour on a failure. Second channel to the
+/// count; cloud-off in the error colour on a failure; the passphrase lock
+/// button while end-to-end encryption has no key. Second channel to the
 /// colour is the glyph shape, so no state rests on colour alone.
 class HomeStatusGlyph extends StatelessWidget {
   /// Creates the glyph for [status].
@@ -70,6 +80,12 @@ class HomeStatusGlyph extends StatelessWidget {
           Icons.cloud_off_outlined,
           color: scheme.error,
           semanticLabel: status.detail,
+        ),
+        // The shared lock button: icon only, and it opens the passphrase
+        // field. Not a failure glyph: nothing is broken, a key is missing.
+        HomeStatusKind.locked => E2ePassphraseButton(
+          locked: true,
+          onSaved: status.onUnlock,
         ),
       },
     );

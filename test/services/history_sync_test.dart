@@ -1,16 +1,18 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:crdt_sync/crdt_sync.dart';
+import 'package:crdt_sync_flutter/crdt_sync_flutter.dart'
+    show kE2ePassphraseKey;
+import 'package:crdt_sync_flutter/testing/fake_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:http/http.dart' as http;
-import 'package:http/testing.dart';
 import 'package:lyricanki/services/export_history.dart';
 import 'package:lyricanki/services/history_sync.dart';
 
 import 'export_history_fixtures.dart';
+import 'fake_rtdb.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
   late Directory root;
 
   setUp(() => root = Directory.systemTemp.createTempSync('sync'));
@@ -51,73 +53,83 @@ void main() {
     expect(kSyncApp.project.databaseUrl, contains('europe-west1'));
   });
 
-  test('merges a peer device\'s history and keeps both songs', () async {
-    // A whole tick against a fake Realtime Database: this device pushes its
-    // own log, pulls the peer's, merges, and writes the result back.
-    final history = await ExportHistory.open(
-      deviceId: 'me',
-      directoryOverride: root,
-    );
-    await history.record(track: despacito, path: '/a.apkg', cardCount: 147);
+  group('end-to-end encryption', () {
+    setUp(() {
+      e2eArgon2Params = const Argon2Params(
+        memoryKiB: 8,
+        iterations: 1,
+        parallelism: 1,
+      );
+      // The copy memo is process-global; each test starts from a fresh db.
+      resetE2eCopyMemo();
+    });
 
-    final peerLog = await () async {
+    Future<ExportHistory> mine() async {
+      final history = await ExportHistory.open(
+        deviceId: 'me',
+        directoryOverride: root,
+      );
+      await history.record(track: despacito, path: '/a.apkg', cardCount: 147);
+      return history;
+    }
+
+    test('merges an old plaintext peer and pushes only ciphertext', () async {
+      installFakeSecureStorage(initial: {kE2ePassphraseKey: 'test-passphrase'});
+      final db = FakeRtdb();
+      // A peer still on a plaintext build: its log sits at the old prefix,
+      // which the one-time copy must carry over.
       final peerRoot = Directory('${root.path}/peer')..createSync();
       final peer = await ExportHistory.open(
         deviceId: 'peer',
         directoryOverride: peerRoot,
       );
       await peer.record(track: bailando, path: '/b.apkg', cardCount: 92);
-      return logToJson(peer.snapshot());
-    }();
+      await db.client().putFileText(
+        '$kSyncPathPrefix/peer/${ExportHistory.fileName}',
+        logToJson(peer.snapshot()),
+        message: 'seed',
+      );
+      db.clearWrites();
+      final history = await mine();
 
-    final pushed = <String, String>{};
-    final client = FirebaseRestClient(
-      databaseUrl: 'https://fake-rtdb.example.com',
-      auth: _StubAuth(),
-      httpClient: MockClient((request) async {
-        final path = request.url.path;
-        // The device listing: one peer, plus ourselves (skipped).
-        if (request.method == 'GET' && path.contains('lyricanki-sync')) {
-          if (request.url.queryParameters['shallow'] == 'true') {
-            return http.Response(jsonEncode({'peer': true, 'me': true}), 200);
-          }
-          if (path.contains('peer')) {
-            return http.Response(jsonEncode(peerLog), 200);
-          }
-          return http.Response('null', 200);
+      final count = await syncHistory(
+        history: history,
+        deviceId: 'me',
+        firebaseFactory: () async => db.client(),
+      );
+
+      expect(count, 2, reason: 'the old peer is merged through the copy');
+      expect(db.writes, isNotEmpty);
+      for (final write in db.writes) {
+        expect(write.key, isNot(startsWith('$kSyncPathPrefix/')));
+        // Neither the songs nor the field names reach the server.
+        for (final plain in ['Despacito', 'Bailando', '"artist"', 'lyrics']) {
+          expect(write.value, isNot(contains(plain)), reason: write.key);
         }
-        if (request.method == 'PUT') {
-          pushed[path] = request.body;
-          return http.Response(request.body, 200);
-        }
-        return http.Response('null', 200);
-      }),
-    );
+      }
+      expect(
+        db.writes.map((w) => w.key),
+        contains(startsWith('${E2eLayout.of(kSyncPathPrefix).prefix}/me/')),
+      );
+    });
 
-    final count = await syncHistory(
-      history: history,
-      deviceId: 'me',
-      firebaseFactory: () async => client,
-    );
+    test('pushes nothing while this device has no passphrase', () async {
+      installFakeSecureStorage();
+      final db = FakeRtdb();
 
-    expect(count, 2, reason: 'this device keeps both songs');
-    expect(
-      history.all().map((e) => e.name),
-      containsAll(<String>[
-        'Despacito',
-        'Bailando',
-      ]),
-    );
-    expect(pushed, isNotEmpty, reason: 'the merged log is pushed back');
+      await expectLater(
+        syncHistory(
+          history: await mine(),
+          deviceId: 'me',
+          firebaseFactory: () async => db.client(),
+        ),
+        throwsA(
+          isA<HistorySyncLocked>()
+              .having((e) => e.reason, 'reason', E2eLockReason.needsPassphrase)
+              .having((e) => '$e', 'text', contains('needsPassphrase')),
+        ),
+      );
+      expect(db.writes, isEmpty, reason: 'fail closed, never plaintext');
+    });
   });
-}
-
-/// A token provider that never reaches the network: the merge, not the
-/// sign-in, is what this suite exercises.
-class _StubAuth implements FirebaseTokenProvider {
-  @override
-  Future<String> idToken() async => 'stub-token';
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
