@@ -13,7 +13,7 @@
 # board runs this script in a git worktree, and phone_deploy.sh refuses a
 # production build from any worktree (exit 49), so an unmerged build can never
 # replace the app. The live checkout is pulled --ff-only first, and the deploy
-# goes on only when it then sits exactly on this checkout's HEAD with no
+# goes on only when its HEAD (origin's) contains this checkout's HEAD, with no
 # uncommitted tracked edits: only pushed code ships, never local WIP. The
 # release key and the pack are gitignored and already live there.
 #
@@ -62,11 +62,13 @@ sync_live_checkout() {
     git -C "$LIVE_CHECKOUT" pull --ff-only --quiet \
         || die "cannot fast-forward $LIVE_CHECKOUT to origin (local commits or edits there)"
     got="$(git -C "$LIVE_CHECKOUT" rev-parse HEAD)"
-    if [[ "$got" != "$want" ]]; then
-        git -C "$LIVE_CHECKOUT" merge-base --is-ancestor "$want" "$got" 2>/dev/null \
-            && die "$LIVE_CHECKOUT has local commits on top of $want: push or drop them"
-        die "$want is not on origin (the pulled $LIVE_CHECKOUT is at $got): push first"
-    fi
+    [[ -z "$(git -C "$LIVE_CHECKOUT" rev-list '@{u}..HEAD')" ]] \
+        || die "$LIVE_CHECKOUT has local commits not on origin: push or drop them"
+    # Origin may have moved past $want since it was pushed: its newer HEAD
+    # still holds $want and is merged code, so that is what ships.
+    git -C "$LIVE_CHECKOUT" merge-base --is-ancestor "$want" "$got" 2>/dev/null \
+        || die "$want is not on origin (the pulled $LIVE_CHECKOUT is at $got): push first"
+    echo "==> Building $got from $LIVE_CHECKOUT"
     dirty="$(git -C "$LIVE_CHECKOUT" diff --name-only HEAD)"
     [[ -z "$dirty" ]] \
         || die "uncommitted edits in $LIVE_CHECKOUT would ship: $(tr '\n' ' ' <<<"$dirty")"

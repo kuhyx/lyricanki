@@ -11,7 +11,7 @@ The checkouts are real git repos: a bare origin, the live checkout (a clone,
 like ~/src/lyricanki) and the deploying checkout (a git worktree of it, like
 a board session's). phone_deploy refuses production builds from a worktree
 (exit 49), so the deploy must build from the live checkout after pulling it,
-and only when the pull lands exactly on the commit being deployed.
+and only when the pulled HEAD contains the commit being deployed.
 
 Run: python3 -m pytest scripts/tests/test_deploy*.py
 """

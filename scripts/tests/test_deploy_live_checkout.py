@@ -2,7 +2,7 @@
 
 phone_deploy refuses production builds from a worktree (exit 49), so the
 deploy pulls ~/src/lyricanki --ff-only and builds there, only when the pull
-lands exactly on the deploying checkout's HEAD with no tracked edits.
+lands on a commit that contains the deploying checkout's HEAD, with no tracked edits.
 
 Run: python3 -m pytest scripts/tests/test_deploy_live_checkout.py
 """
@@ -65,3 +65,15 @@ def test_missing_release_key_fails(env: dict[str, str]) -> None:
     res = run_deploy(env)
     assert res.returncode != 0
     assert "phone_deploy" not in calls(env)
+
+
+def test_origin_moved_past_the_deployed_commit_still_ships(env: dict[str, str], tmp_path: Path) -> None:
+    """Another push lands after ours: the newer origin HEAD contains our commit, so deploy it."""
+    live = Path(env["LIVE_CHECKOUT"])
+    other = tmp_path / "other"
+    git(tmp_path, "clone", "-q", git(live, "remote", "get-url", "origin"), str(other))
+    commit(other, "later")
+    git(other, "push", "-q", "origin", "HEAD:main")
+    res = run_deploy(env)
+    assert res.returncode == 0, res.stdout + res.stderr
+    assert git(live, "rev-parse", "HEAD") == git(other, "rev-parse", "HEAD")
