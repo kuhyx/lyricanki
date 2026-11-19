@@ -1,7 +1,7 @@
 import 'package:crdt_sync/crdt_sync.dart';
 import 'package:crdt_sync_flutter/crdt_sync_flutter.dart';
-import 'package:flutter/material.dart';
 import 'package:lyricanki/services/history_sync.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:sync_settings_ui/sync_settings_ui.dart';
 
 /// The shared sync settings screen, wired to lyricanki's project.

@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:lyricanki/models/export_entry.dart';
 import 'package:lyricanki/models/track.dart';
 import 'package:lyricanki/screens/deck_flow.dart';
@@ -9,6 +8,7 @@ import 'package:lyricanki/services/deck_session.dart';
 import 'package:lyricanki/services/export_history.dart';
 import 'package:lyricanki/services/history_sync.dart';
 import 'package:lyricanki/services/pipeline/deck_builder.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The history half of the home screen: opening a row, hiding it, rebuilding
 /// its deck.

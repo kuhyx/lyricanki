@@ -1,9 +1,9 @@
 import 'dart:async';
 
 import 'package:design_system/design_system.dart';
-import 'package:flutter/material.dart';
 import 'package:lyricanki/services/attributions.dart';
 import 'package:lyricanki/services/pack/pack_store.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Downloads the dictionary pack and links the licence attribution.
 ///

@@ -1,8 +1,8 @@
 // coverage:ignore-file
 // Bootstrap only: wiring that cannot be exercised without a real app host.
 import 'package:design_system/design_system.dart';
-import 'package:flutter/material.dart';
 import 'package:lyricanki/screens/song_search_screen.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   runApp(const LyricankiApp());

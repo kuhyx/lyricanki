@@ -1,9 +1,9 @@
 import 'package:design_system/design_system.dart';
 import 'package:flutter/gestures.dart';
-import 'package:flutter/material.dart';
 import 'package:lyricanki/services/deck_session.dart';
 import 'package:lyricanki/widgets/vocab_card_cell.dart';
 import 'package:lyricanki/widgets/vocab_card_tile.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Lists every candidate card and lets the user untick the ones they know.
 ///

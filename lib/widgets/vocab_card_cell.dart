@@ -1,7 +1,7 @@
 import 'package:design_system/design_system.dart';
-import 'package:flutter/material.dart';
 import 'package:lyricanki/models/vocab_card.dart';
 import 'package:lyricanki/widgets/vocab_card_tile.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// One card as a compact grid cell on the review screen.
 ///

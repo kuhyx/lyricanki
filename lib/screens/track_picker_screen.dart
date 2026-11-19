@@ -1,7 +1,7 @@
 import 'package:design_system/design_system.dart';
-import 'package:flutter/material.dart';
 import 'package:lyricanki/models/track.dart';
 import 'package:lyricanki/services/lrclib_client.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Searches LRCLIB and lets the user pick exactly which recording to use.
 ///

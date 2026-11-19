@@ -1,11 +1,11 @@
 import 'dart:io';
 
 import 'package:design_system/design_system.dart';
-import 'package:flutter/material.dart';
 import 'package:lyricanki/models/export_entry.dart';
 import 'package:lyricanki/models/vocab_card.dart';
 import 'package:lyricanki/widgets/icon_confirm.dart';
 import 'package:lyricanki/widgets/vocab_card_tile.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// What one exported song looks like up close: its stats, and what can be
 /// done with it.

@@ -1,6 +1,6 @@
 import 'package:crdt_sync_flutter/crdt_sync_flutter.dart'
     show E2ePassphraseButton;
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// What the home screen's last background action came to.
 enum HomeStatusKind {

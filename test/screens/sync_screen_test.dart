@@ -4,7 +4,7 @@ import 'package:crdt_sync/crdt_sync.dart';
 import 'package:crdt_sync_flutter/crdt_sync_flutter.dart';
 import 'package:crdt_sync_flutter/testing/fake_secure_storage.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lyricanki/screens/sync_screen.dart';
 import 'package:lyricanki/services/history_sync.dart';
