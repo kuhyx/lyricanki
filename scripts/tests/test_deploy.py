@@ -6,6 +6,12 @@ the stub adb answers from a state dir, and each test flips one fact
 deploy fail. The green path proves the same script exits 0 when all
 facts hold.
 
+The checkouts are real git repos: a bare origin, the live checkout (a clone,
+like ~/src/lyricanki) and the deploying checkout (a git worktree of it, like
+a board session's). phone_deploy refuses production builds from a worktree
+(exit 49), so the deploy must build from the live checkout after pulling it,
+and only when the pull lands exactly on the commit being deployed.
+
 Run: python3 -m pytest scripts/tests/test_deploy.py
 """
 
@@ -43,17 +49,47 @@ case "$*" in
 esac
 """
 
-# Stub phone_deploy.sh: a successful install bumps lastUpdateTime.
+# Stub phone_deploy.sh: a successful install bumps lastUpdateTime. Like the
+# real one, it refuses an app dir that is a git worktree (exit 49).
 FAKE_PHONE_DEPLOY = r"""#!/bin/bash
 echo "phone_deploy $*" >> "$FAKE_ADB_STATE/calls"
+gd=$(git -C "$1" rev-parse --path-format=absolute --git-dir)
+common=$(git -C "$1" rev-parse --path-format=absolute --git-common-dir)
+[[ $gd == "$common" ]] || { echo "refusing a worktree (exit 49)" >&2; exit 49; }
 [[ -f $FAKE_ADB_STATE/build_fails ]] && exit 34
 date +%s%N > "$FAKE_ADB_STATE/installed"
 """
 
 
+GIT_ENV = {
+    "GIT_AUTHOR_NAME": "t",
+    "GIT_AUTHOR_EMAIL": "t@t",
+    "GIT_COMMITTER_NAME": "t",
+    "GIT_COMMITTER_EMAIL": "t@t",
+    "GIT_CONFIG_GLOBAL": "/dev/null",
+    "GIT_CONFIG_NOSYSTEM": "1",
+}
+
+
+def _git(cwd: Path, *args: str) -> str:
+    return subprocess.run(
+        ["git", "-C", str(cwd), *args],
+        env={**os.environ, **GIT_ENV},
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.strip()
+
+
+def _commit(repo: Path, name: str, content: str | None = None) -> None:
+    (repo / name).write_text(name if content is None else content)
+    _git(repo, "add", name)
+    _git(repo, "commit", "-q", "-m", name)
+
+
 @pytest.fixture
 def env(tmp_path: Path) -> dict[str, str]:
-    """Isolated PATH, state dir, pack and live checkout for one run."""
+    """Isolated PATH, state dir, pack, origin, live checkout and worktree."""
     bin_dir = tmp_path / "bin"
     bin_dir.mkdir()
     adb = bin_dir / "adb"
@@ -69,13 +105,19 @@ def env(tmp_path: Path) -> dict[str, str]:
     (state / "running").touch()
     pack = tmp_path / "lyricanki-es.sqlite"
     pack.write_bytes(b"x" * 1024)
+    origin = tmp_path / "origin.git"
+    subprocess.run(["git", "init", "-q", "--bare", "-b", "main", str(origin)], check=True)
     live = tmp_path / "live"
-    (live / "android").mkdir(parents=True)
+    _git(tmp_path, "clone", "-q", str(origin), str(live))
+    _commit(live, ".gitignore", "android/key.properties\n")
+    _git(live, "push", "-q", "origin", "HEAD:main")
+    (live / "android").mkdir()
     (live / "android" / "key.properties").write_text("storeFile=x\n")
     app = tmp_path / "app"
-    (app / "android").mkdir(parents=True)
+    _git(live, "worktree", "add", "-q", "--detach", str(app))
     return {
         **os.environ,
+        **GIT_ENV,
         "PATH": f"{bin_dir}:{os.environ['PATH']}",
         "FAKE_ADB_STATE": str(state),
         "FAKE_SERIAL": SERIAL,
@@ -109,10 +151,61 @@ def test_green_path_exits_zero_and_never_wipes(env: dict[str, str]) -> None:
     res = _run(env)
     assert res.returncode == 0, res.stdout + res.stderr
     calls = _calls(env)
-    assert "phone_deploy" in calls and "--release" in calls
+    assert f"phone_deploy {env['LIVE_CHECKOUT']} --release" in calls
     assert "uninstall" not in calls and "pm clear" not in calls
-    key = Path(env["DEPLOY_REPO_ROOT"]) / "android" / "key.properties"
-    assert key.stat().st_mode & 0o777 == 0o600
+
+
+def test_pulls_live_checkout_up_to_the_pushed_commit(env: dict[str, str]) -> None:
+    """The board pushed from its worktree; the live checkout is one behind."""
+    app, live = Path(env["DEPLOY_REPO_ROOT"]), Path(env["LIVE_CHECKOUT"])
+    _commit(app, "feature")
+    _git(app, "push", "-q", "origin", "HEAD:main")
+    res = _run(env)
+    assert res.returncode == 0, res.stdout + res.stderr
+    assert _git(live, "rev-parse", "HEAD") == _git(app, "rev-parse", "HEAD")
+
+
+def test_unpushed_commit_never_ships(env: dict[str, str]) -> None:
+    _commit(Path(env["DEPLOY_REPO_ROOT"]), "unpushed")
+    res = _run(env)
+    assert res.returncode != 0
+    assert "not on origin" in res.stderr
+    assert "phone_deploy" not in _calls(env)
+
+
+def test_uncommitted_edit_in_live_checkout_never_ships(env: dict[str, str]) -> None:
+    (Path(env["LIVE_CHECKOUT"]) / ".gitignore").write_text("wip\n")
+    res = _run(env)
+    assert res.returncode != 0
+    assert "uncommitted" in res.stderr
+    assert "phone_deploy" not in _calls(env)
+
+
+def test_diverged_live_checkout_fails_and_names_it(env: dict[str, str]) -> None:
+    """Live has a local commit and origin moved on: ff-only cannot pull."""
+    app = Path(env["DEPLOY_REPO_ROOT"])
+    _commit(app, "feature")
+    _git(app, "push", "-q", "origin", "HEAD:main")
+    _commit(Path(env["LIVE_CHECKOUT"]), "local-only")
+    res = _run(env)
+    assert res.returncode != 0
+    assert "cannot fast-forward" in res.stderr
+    assert "phone_deploy" not in _calls(env)
+
+
+def test_live_checkout_ahead_of_origin_never_ships(env: dict[str, str]) -> None:
+    _commit(Path(env["LIVE_CHECKOUT"]), "local-only")
+    res = _run(env)
+    assert res.returncode != 0
+    assert "local commits" in res.stderr
+    assert "phone_deploy" not in _calls(env)
+
+
+def test_missing_release_key_fails(env: dict[str, str]) -> None:
+    (Path(env["LIVE_CHECKOUT"]) / "android" / "key.properties").unlink()
+    res = _run(env)
+    assert res.returncode != 0
+    assert "phone_deploy" not in _calls(env)
 
 
 def test_second_run_is_idempotent(env: dict[str, str]) -> None:

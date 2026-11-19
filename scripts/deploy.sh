@@ -9,10 +9,13 @@
 # pushed only when the phone's copy differs in size. NEVER uninstalls and
 # NEVER clears app data -- that would destroy the user's settings and pack.
 #
-# Builds from this checkout (the code being shipped). The release key and the
-# gitignored pack are not in a fresh worktree, so both fall back to the live
-# checkout ~/src/lyricanki, which is only read, never pulled or written: the
-# app runs on the phone, not from that tree.
+# Builds from the live checkout ~/src/lyricanki, never from this one: the
+# board runs this script in a git worktree, and phone_deploy.sh refuses a
+# production build from any worktree (exit 49), so an unmerged build can never
+# replace the app. The live checkout is pulled --ff-only first, and the deploy
+# goes on only when it then sits exactly on this checkout's HEAD with no
+# uncommitted tracked edits: only pushed code ships, never local WIP. The
+# release key and the pack are gitignored and already live there.
 #
 # Env overrides (tests): DEPLOY_REPO_ROOT, DEPLOY_SERIAL, LYRICANKI_PACK, PHONE_DEPLOY,
 # LIVE_CHECKOUT, HEALTH_SETTLE_SECS.
@@ -51,14 +54,24 @@ resolve_pack() {
     return 1
 }
 
-# A fresh worktree has no key.properties (gitignored); without it the build
-# would be refused by phone_deploy. Copy the live checkout's, mode 600.
-ensure_release_key() {
-    local props="$REPO_ROOT/android/key.properties"
-    [[ -f "$props" ]] && return 0
+# Bring the live checkout to the commit being deployed. git's own message
+# leads a failed pull: the board's deploy healer keys on it.
+sync_live_checkout() {
+    local want got dirty
+    want="$(git -C "$REPO_ROOT" rev-parse HEAD)"
+    git -C "$LIVE_CHECKOUT" pull --ff-only --quiet \
+        || die "cannot fast-forward $LIVE_CHECKOUT to origin (local commits or edits there)"
+    got="$(git -C "$LIVE_CHECKOUT" rev-parse HEAD)"
+    if [[ "$got" != "$want" ]]; then
+        git -C "$LIVE_CHECKOUT" merge-base --is-ancestor "$want" "$got" 2>/dev/null \
+            && die "$LIVE_CHECKOUT has local commits on top of $want: push or drop them"
+        die "$want is not on origin (the pulled $LIVE_CHECKOUT is at $got): push first"
+    fi
+    dirty="$(git -C "$LIVE_CHECKOUT" diff --name-only HEAD)"
+    [[ -z "$dirty" ]] \
+        || die "uncommitted edits in $LIVE_CHECKOUT would ship: $(tr '\n' ' ' <<<"$dirty")"
     [[ -f "$LIVE_CHECKOUT/android/key.properties" ]] \
-        || die "no android/key.properties here or in $LIVE_CHECKOUT"
-    install -m 600 "$LIVE_CHECKOUT/android/key.properties" "$props"
+        || die "no android/key.properties in $LIVE_CHECKOUT"
 }
 
 # Captured into a variable, not piped into head/grep -q: an early-exiting
@@ -112,11 +125,11 @@ main() {
     pack="$(resolve_pack)" || die "pack $PACK_NAME not found (see tools/pack_builder/README.md)"
     command -v adb >/dev/null 2>&1 || die "adb not found"
     adb devices | grep -q "^${SERIAL}[[:space:]]*device$" || die "phone $SERIAL not connected"
-    ensure_release_key
+    sync_live_checkout
 
     before="$(last_update)"
-    echo "==> Release build + install via phone_deploy.sh"
-    ADB_SERIAL="$SERIAL" bash "$PHONE_DEPLOY" "$REPO_ROOT" --release \
+    echo "==> Release build + install via phone_deploy.sh ($LIVE_CHECKOUT)"
+    ADB_SERIAL="$SERIAL" bash "$PHONE_DEPLOY" "$LIVE_CHECKOUT" --release \
         || die "phone_deploy.sh failed (exit $?)"
     push_pack "$pack"
     health_check "$pack" "$before"
