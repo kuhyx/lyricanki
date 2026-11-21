@@ -5,6 +5,7 @@ import 'package:material_ui/material_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:kuhy_credit/kuhy_credit.dart';
 import 'package:lyricanki/screens/song_search_screen.dart';
 import 'package:lyricanki/services/lrclib_client.dart';
 import 'package:lyricanki/services/pack/pack_store.dart';
@@ -74,6 +75,7 @@ void main() {
     // button is disabled rather than failing later with a SQLite error.
     final store = storeIn(root);
     await pump(tester, store);
+    expect(find.byType(KuhyCredit), findsOneWidget);
     expect(
       find.descendant(
         of: find.byType(Center),

@@ -60,9 +60,6 @@ class DeckBuilder {
       // learner met the word in. Later readings only contribute pos and gloss.
       byLemma[card.lemma] = existing == null ? card : existing.mergedWith(card);
     });
-    return DeckDraft(
-      cards: byLemma.values.toList(),
-      unresolved: unresolved,
-    );
+    return DeckDraft(cards: byLemma.values.toList(), unresolved: unresolved);
   }
 }

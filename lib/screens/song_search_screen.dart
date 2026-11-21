@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:crdt_sync_flutter/crdt_sync_flutter.dart';
+import 'package:kuhy_credit/kuhy_credit.dart';
 import 'package:lyricanki/models/export_entry.dart';
 import 'package:lyricanki/models/track.dart';
 import 'package:lyricanki/screens/deck_flow.dart';
@@ -226,6 +227,10 @@ class _SongSearchScreenState extends State<SongSearchScreen>
               semanticLabel: 'Dictionary pack',
             ),
             onPressed: _openPackScreen,
+          ),
+          const Padding(
+            padding: EdgeInsets.only(right: 12),
+            child: KuhyCredit(size: 32, below: true),
           ),
         ],
       ),

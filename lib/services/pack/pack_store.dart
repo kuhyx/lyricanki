@@ -23,12 +23,9 @@ class PackStore {
   ///
   /// [isAndroid] is injectable because the external-storage preference is
   /// Android-only behaviour that must stay tested from a Linux test host.
-  PackStore({
-    http.Client? httpClient,
-    this.directoryOverride,
-    bool? isAndroid,
-  }) : _http = httpClient ?? http.Client(),
-       _isAndroid = isAndroid ?? Platform.isAndroid;
+  PackStore({http.Client? httpClient, this.directoryOverride, bool? isAndroid})
+    : _http = httpClient ?? http.Client(),
+      _isAndroid = isAndroid ?? Platform.isAndroid;
 
   final http.Client _http;
 

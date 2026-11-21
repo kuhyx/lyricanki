@@ -40,9 +40,9 @@ class LrclibClient {
   /// poison a Spanish deck. Choosing between them is the user's job (Q3), so
   /// the picker shows artist and duration to tell versions apart.
   Future<List<Track>> search(String query) async {
-    final uri = Uri.parse('$baseUrl/api/search').replace(
-      queryParameters: <String, String>{'q': query},
-    );
+    final uri = Uri.parse(
+      '$baseUrl/api/search',
+    ).replace(queryParameters: <String, String>{'q': query});
     final body = await _getJson(uri);
     if (body is! List) {
       throw const LrclibException('Unexpected search response from LRCLIB.');

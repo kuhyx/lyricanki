@@ -33,12 +33,7 @@ T withCollection<T>(List<int> bytes, T Function(Database db) body) {
 
 void main() {
   const cards = <VocabCard>[
-    VocabCard(
-      lemma: 'corazón',
-      pos: 'noun',
-      gloss: 'heart',
-      line: 'Despacito',
-    ),
+    VocabCard(lemma: 'corazón', pos: 'noun', gloss: 'heart', line: 'Despacito'),
     VocabCard(
       lemma: 'estar',
       pos: 'verb',

@@ -32,10 +32,9 @@ class PackReader {
   /// Deliberately many-to-one: `fue` is both *ser* and *ir*, and picking a
   /// single winner in the query would silently mis-teach the word.
   List<LemmaRow> candidates(String form) {
-    final rows = _db.select(
-      'SELECT lemma, pos FROM forms WHERE form = ?',
-      [form],
-    );
+    final rows = _db.select('SELECT lemma, pos FROM forms WHERE form = ?', [
+      form,
+    ]);
     return <LemmaRow>[
       for (final row in rows)
         (lemma: row['lemma'] as String, pos: row['pos'] as String),

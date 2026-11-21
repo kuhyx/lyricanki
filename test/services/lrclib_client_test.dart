@@ -74,10 +74,7 @@ void main() {
       final client = clientReturning(
         (_) async => utf8Response(<String, dynamic>{'oops': true}),
       );
-      await expectLater(
-        client.search('x'),
-        throwsA(isA<LrclibException>()),
-      );
+      await expectLater(client.search('x'), throwsA(isA<LrclibException>()));
       client.close();
     });
   });
@@ -99,13 +96,8 @@ void main() {
     });
 
     test('throws when the payload is not an object', () async {
-      final client = clientReturning(
-        (_) async => utf8Response(<int>[1, 2]),
-      );
-      await expectLater(
-        client.getById(1),
-        throwsA(isA<LrclibException>()),
-      );
+      final client = clientReturning((_) async => utf8Response(<int>[1, 2]));
+      await expectLater(client.getById(1), throwsA(isA<LrclibException>()));
       client.close();
     });
   });
@@ -174,10 +166,7 @@ void main() {
     });
 
     test('has a readable toString', () {
-      expect(
-        const LrclibException('boom').toString(),
-        'LrclibException: boom',
-      );
+      expect(const LrclibException('boom').toString(), 'LrclibException: boom');
     });
   });
 }

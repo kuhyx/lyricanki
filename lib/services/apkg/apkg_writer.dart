@@ -39,9 +39,7 @@ class ApkgWriter {
     final collection = _buildCollection(cards: exportable, deckName: deckName);
 
     final archive = Archive()
-      ..addFile(
-        ArchiveFile('collection.anki2', collection.length, collection),
-      )
+      ..addFile(ArchiveFile('collection.anki2', collection.length, collection))
       // Anki's media map: name -> filename. Always empty here, never omitted.
       ..addFile(_mediaEntry());
 

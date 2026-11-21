@@ -31,18 +31,20 @@ void main() {
   group('tokenize', () {
     test('lowercases and keeps accented Spanish letters intact', () {
       final tokens = Tokenizer.forLanguage('es').tokenize('Despacito AQUÍ ñu');
-      expect(
-        tokens.map((t) => t.surface).toList(),
-        <String>['despacito', 'aquí', 'ñu'],
-      );
+      expect(tokens.map((t) => t.surface).toList(), <String>[
+        'despacito',
+        'aquí',
+        'ñu',
+      ]);
     });
 
     test('strips punctuation but keeps elision as one token', () {
       final tokens = Tokenizer.forLanguage('fr').tokenize("¡Hey! l'amour, oh");
-      expect(
-        tokens.map((t) => t.surface).toList(),
-        <String>['hey', "l'amour", 'oh'],
-      );
+      expect(tokens.map((t) => t.surface).toList(), <String>[
+        'hey',
+        "l'amour",
+        'oh',
+      ]);
     });
 
     test('attaches the originating line to every token', () {

@@ -142,10 +142,8 @@ void main() {
     test('throws on a non-200 and installs nothing', () async {
       final store = PackStore(
         httpClient: MockClient.streaming(
-          (_, _) async => http.StreamedResponse(
-            const Stream<List<int>>.empty(),
-            404,
-          ),
+          (_, _) async =>
+              http.StreamedResponse(const Stream<List<int>>.empty(), 404),
         ),
         directoryOverride: root,
       );

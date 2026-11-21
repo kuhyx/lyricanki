@@ -77,20 +77,18 @@ void main() {
     test('prefers a candidate that actually carries an English gloss', () {
       // `las` is also German lesen; that entry has no English gloss and would
       // produce a card with no usable back.
-      final best = bestCandidate(
-        'las',
-        <Row>[row('lesen', 'verb'), row('la', 'article')],
-        hasEnglish: (lemma, pos) => lemma == 'la',
-      );
+      final best = bestCandidate('las', <Row>[
+        row('lesen', 'verb'),
+        row('la', 'article'),
+      ], hasEnglish: (lemma, pos) => lemma == 'la');
       expect(best, row('la', 'article'));
     });
 
     test('gloss beats the pos ranking, since an unglossed card is useless', () {
-      final best = bestCandidate(
-        'x',
-        <Row>[row('averb', 'verb'), row('anoun', 'noun')],
-        hasEnglish: (lemma, pos) => lemma == 'anoun',
-      );
+      final best = bestCandidate('x', <Row>[
+        row('averb', 'verb'),
+        row('anoun', 'noun'),
+      ], hasEnglish: (lemma, pos) => lemma == 'anoun');
       expect(best, row('anoun', 'noun'));
     });
 

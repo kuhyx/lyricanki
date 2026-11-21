@@ -68,11 +68,7 @@ void main() {
     // The pre-existing call shape. It must keep working, and must read back
     // as "nothing stored" so the screen falls back to deriving.
     final history = await open();
-    await history.record(
-      track: despacito,
-      path: '/tmp/d.apkg',
-      cardCount: 0,
-    );
+    await history.record(track: despacito, path: '/tmp/d.apkg', cardCount: 0);
 
     expect(history.all().single.cards, isEmpty);
     expect(history.all().single.unresolved, isEmpty);
