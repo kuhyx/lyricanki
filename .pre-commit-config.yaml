@@ -15,6 +15,10 @@ repos:
       - id: trailing-whitespace
         args: [--markdown-linebreak-ext=md]
       - id: end-of-file-fixer
+        # flutter_launcher_icons rewrites colors.xml without a final newline;
+        # keep the committed copy byte-identical so regenerating icons in a
+        # checkout leaves it clean (a dirty live checkout blocks deploy).
+        exclude: ^android/app/src/main/res/values/colors\.xml$
       - id: check-yaml
       - id: check-added-large-files
         args: [--maxkb=2000]
