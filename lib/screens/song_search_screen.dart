@@ -1,10 +1,10 @@
 import 'dart:async';
 
 import 'package:crdt_sync_flutter/crdt_sync_flutter.dart';
-import 'package:kuhy_credit/kuhy_credit.dart';
 import 'package:lyricanki/models/export_entry.dart';
 import 'package:lyricanki/models/track.dart';
 import 'package:lyricanki/screens/deck_flow.dart';
+import 'package:lyricanki/screens/home_app_bar.dart';
 import 'package:lyricanki/screens/home_status.dart';
 import 'package:lyricanki/screens/pack_screen.dart';
 import 'package:lyricanki/screens/song_search_history.dart';
@@ -214,25 +214,10 @@ class _SongSearchScreenState extends State<SongSearchScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        actions: <Widget>[
-          if (_status case final status?) HomeStatusGlyph(status: status),
-          IconButton(
-            icon: const Icon(Icons.sync, semanticLabel: 'Sync history'),
-            onPressed: _working ? null : syncNow,
-          ),
-          IconButton(
-            icon: const Icon(
-              Icons.storage_outlined,
-              semanticLabel: 'Dictionary pack',
-            ),
-            onPressed: _openPackScreen,
-          ),
-          const Padding(
-            padding: EdgeInsets.only(right: 12),
-            child: KuhyCredit(size: 32, below: true),
-          ),
-        ],
+      appBar: HomeAppBar(
+        status: _status,
+        onSync: _working ? null : syncNow,
+        onOpenPack: _openPackScreen,
       ),
       body: _working
           ? const Center(child: CircularProgressIndicator())
