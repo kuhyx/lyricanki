@@ -19,6 +19,7 @@ Future<bool> confirmByIcon(
         icon: Icon(icon, color: scheme.error),
         actions: <Widget>[
           IconButton(
+            tooltip: 'Cancel',
             key: const Key('confirm-cancel'),
             autofocus: true,
             icon: const Icon(Icons.close, semanticLabel: 'Cancel'),

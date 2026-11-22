@@ -30,10 +30,12 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
       actions: <Widget>[
         if (status case final shown?) HomeStatusGlyph(status: shown),
         IconButton(
+          tooltip: 'Sync',
           icon: const Icon(Icons.sync, semanticLabel: 'Sync history'),
           onPressed: onSync,
         ),
         IconButton(
+          tooltip: 'Dictionary',
           icon: const Icon(
             Icons.storage_outlined,
             semanticLabel: 'Dictionary pack',

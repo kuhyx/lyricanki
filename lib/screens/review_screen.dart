@@ -56,10 +56,12 @@ class _ReviewScreenState extends State<ReviewScreen> {
             title: Text(session.track?.name ?? ''),
             actions: <Widget>[
               IconButton(
+                tooltip: 'All',
                 icon: const Icon(Icons.select_all, semanticLabel: 'All'),
                 onPressed: session.selectAll,
               ),
               IconButton(
+                tooltip: 'None',
                 icon: const Icon(Icons.deselect, semanticLabel: 'None'),
                 onPressed: session.selectNone,
               ),

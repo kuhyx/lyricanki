@@ -187,6 +187,7 @@ class _CreditsButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => IconButton(
+    tooltip: 'Credits',
     key: const Key('pack-credits'),
     icon: const Icon(Icons.copyright, semanticLabel: 'Credits'),
     onPressed: () {

@@ -227,6 +227,7 @@ class _SongSearchScreenState extends State<SongSearchScreen>
               onOpen: openEntry,
             ),
       floatingActionButton: FloatingActionButton(
+        tooltip: 'Find',
         onPressed: _packReady && !_working ? _pickAndBuild : null,
         child: const Icon(Icons.search, semanticLabel: 'Find a song'),
       ),

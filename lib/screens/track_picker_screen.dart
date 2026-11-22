@@ -74,6 +74,7 @@ class _TrackPickerScreenState extends State<TrackPickerScreen> {
               decoration: InputDecoration(
                 prefixIcon: const Icon(Icons.library_music_outlined),
                 suffixIcon: IconButton(
+                  tooltip: 'Search',
                   icon: const Icon(Icons.search),
                   onPressed: _searching ? null : _search,
                 ),

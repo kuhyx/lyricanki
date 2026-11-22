@@ -85,6 +85,7 @@ class ExportDetailScreen extends StatelessWidget {
         title: Text(entry.name),
         actions: <Widget>[
           IconButton(
+            tooltip: 'Hide',
             icon: const Icon(
               Icons.visibility_off_outlined,
               semanticLabel: 'Hide from list',
@@ -134,9 +135,12 @@ class ExportDetailScreen extends StatelessWidget {
               ),
             ),
           if (!missing) const SizedBox(height: AppSpacing.sm),
-          OutlinedButton(
-            onPressed: packReady ? onRebuild : null,
-            child: const Icon(Icons.refresh, semanticLabel: 'Rebuild'),
+          Tooltip(
+            message: 'Rebuild',
+            child: OutlinedButton(
+              onPressed: packReady ? onRebuild : null,
+              child: const Icon(Icons.refresh, semanticLabel: 'Rebuild'),
+            ),
           ),
           if (!packReady)
             Padding(
