@@ -103,9 +103,13 @@ void main() {
 
     tester.binding
       ..handleAppLifecycleStateChanged(AppLifecycleState.inactive)
+      ..handleAppLifecycleStateChanged(AppLifecycleState.resumed)
+      ..handleAppLifecycleStateChanged(AppLifecycleState.inactive)
       ..handleAppLifecycleStateChanged(AppLifecycleState.resumed);
     await tester.pump();
-    expect(calls, 2);
+    expect(calls, 1, reason: 'focus flicker is debounced');
+    await tester.pump(SyncScheduler.defaultDebounce);
+    expect(calls, 2, reason: 'one tick for the whole flicker');
   });
 
   testWidgets('pushes a pending write at once when the app is left', (

@@ -77,9 +77,9 @@ void main() {
 
   test('a burst of writes syncs once, after the debounce', () async {
     scheduler
-      ..afterWrite()
-      ..afterWrite()
-      ..afterWrite();
+      ..soon()
+      ..soon()
+      ..soon();
     expect(calls, 0, reason: 'never on the write path itself');
     await fireOnly(_debounce);
     expect(calls, 1);
@@ -154,7 +154,7 @@ void main() {
     });
 
     final first = scheduler.run();
-    scheduler.afterWrite();
+    scheduler.soon();
     active().single.fire();
     gate.complete();
     await first;
@@ -165,7 +165,7 @@ void main() {
     scheduler.flush();
     expect(calls, 0);
     scheduler
-      ..afterWrite()
+      ..soon()
       ..flush();
     expect(calls, 1, reason: 'the app may be killed before the timer fires');
     expect(active(), isEmpty);
@@ -186,11 +186,11 @@ void main() {
     script = <SyncOutcome>[SyncOutcome.failed];
     await scheduler.run();
     scheduler
-      ..afterWrite()
+      ..soon()
       ..dispose();
     expect(active(), isEmpty);
     await scheduler.run();
-    scheduler.afterWrite();
+    scheduler.soon();
     expect(calls, 1);
     expect(active(), isEmpty);
   });
@@ -217,7 +217,7 @@ void main() {
     expect(real.debounce, const Duration(seconds: 2));
     expect(real.firstRetry, const Duration(seconds: 30));
     expect(real.maxRetry, const Duration(minutes: 10));
-    real.afterWrite();
+    real.soon();
     expect(calls, 0);
   });
 }

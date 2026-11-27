@@ -65,25 +65,26 @@ class SyncScheduler {
   final Duration maxRetry;
 
   Duration _retryDelay;
-  Timer? _pendingWrite;
+  Timer? _pendingSoon;
   Timer? _pendingRetry;
   bool _running = false;
   bool _again = false;
   bool _disposed = false;
 
-  /// A local write happened: sync once things go quiet.
-  void afterWrite() {
+  /// Syncs once things go quiet: after a local write, or on resume, where
+  /// desktop focus changes would otherwise fire a tick per alt-tab.
+  void soon() {
     if (_disposed) return;
-    _pendingWrite?.cancel();
-    _pendingWrite = _timer(debounce, () => unawaited(run()));
+    _pendingSoon?.cancel();
+    _pendingSoon = _timer(debounce, () => unawaited(run()));
   }
 
-  /// Runs a pending write's sync now rather than after the debounce.
+  /// Runs a pending [soon] sync now rather than after the debounce.
   ///
   /// For the app leaving the foreground: Android may kill it before the
   /// timer fires.
   void flush() {
-    final pending = _pendingWrite;
+    final pending = _pendingSoon;
     if (pending == null || !pending.isActive) return;
     pending.cancel();
     unawaited(run());
@@ -100,7 +101,7 @@ class SyncScheduler {
       _again = true;
       return;
     }
-    _pendingWrite?.cancel();
+    _pendingSoon?.cancel();
     _pendingRetry?.cancel();
     _running = true;
     final SyncOutcome outcome;
@@ -120,7 +121,7 @@ class SyncScheduler {
   /// Stops every timer; later requests are ignored.
   void dispose() {
     _disposed = true;
-    _pendingWrite?.cancel();
+    _pendingSoon?.cancel();
     _pendingRetry?.cancel();
   }
 

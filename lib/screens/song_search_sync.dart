@@ -58,7 +58,7 @@ mixin SongSearchSync<T extends StatefulWidget>
   /// Starts background sync over the just-opened [opened] history: one tick
   /// now, then one after every local write.
   void startAutoSync(ExportHistory opened) {
-    _writes = opened.localWrites.listen((_) => _scheduler.afterWrite());
+    _writes = opened.localWrites.listen((_) => _scheduler.soon());
     unawaited(_scheduler.run());
   }
 
@@ -66,9 +66,11 @@ mixin SongSearchSync<T extends StatefulWidget>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       // Pulls whatever another device pushed while this one was away.
-      unawaited(_scheduler.run());
-    } else {
+      // Debounced: a cold start's resume lands on top of the launch tick.
+      _scheduler.soon();
+    } else if (state != AppLifecycleState.inactive) {
       // Leaving: push a pending write now, the process may not come back.
+      // Not on `inactive`, which is mere focus loss (an alt-tab, a dialog).
       _scheduler.flush();
     }
   }
