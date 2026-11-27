@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:crdt_sync/crdt_sync.dart';
 import 'package:http/http.dart' as http;
@@ -16,6 +17,10 @@ class FakeRtdb {
 
   /// `path -> body` of every PUT and PATCH since the last [clearWrites].
   final List<MapEntry<String, String>> writes = <MapEntry<String, String>>[];
+
+  /// While true every request fails as if the network were down, and the
+  /// data stays as it was: the offline half of an offline-first test.
+  bool offline = false;
 
   /// Forgets the recorded writes, keeping the data.
   void clearWrites() => writes.clear();
@@ -53,6 +58,7 @@ class FakeRtdb {
   }
 
   Future<http.Response> _handle(http.Request request) async {
+    if (offline) throw const SocketException('fake rtdb is offline');
     final segments = _segments(request.url);
     switch (request.method) {
       case 'GET':
