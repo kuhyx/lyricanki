@@ -79,10 +79,11 @@ typedef FirebaseFactory = Future<FirebaseRestClient?> Function();
 
 /// Merges the export history with every other device's.
 ///
-/// Manual, never automatic: the list is rendered from the local log, which is
-/// always authoritative and instant, so a network tick is never on the path
-/// that paints the home screen. That is the whole reason the reported bug --
-/// an empty screen after a finished export -- cannot come back as a timeout.
+/// Run in the background by `SyncScheduler` (launch, resume, after a write,
+/// retry after a failure), never awaited by anything that paints: the list is
+/// rendered from the local log, which is always authoritative and instant, so
+/// the reported bug -- an empty screen after a finished export -- cannot come
+/// back as a timeout.
 ///
 /// Returns how many entries the history holds afterwards, or null when this
 /// device has no Firebase session. Not being set up is a normal state, not an

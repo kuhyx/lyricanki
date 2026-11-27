@@ -11,7 +11,7 @@ import 'package:lyricanki/services/lrclib_client.dart';
 import 'package:lyricanki/services/pack/pack_store.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'flow_harness.dart' show historyIn;
+import 'flow_harness.dart' show historyIn, notSignedIn;
 
 void main() {
   late Directory root;
@@ -61,6 +61,7 @@ void main() {
           client: emptyClient(),
           store: store,
           history: history,
+          syncHistory: notSignedIn,
         ),
       ),
     );

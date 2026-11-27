@@ -97,6 +97,7 @@ Future<void> pumpHome(
   ApkgShare? share,
   ExportHistory? history,
   Future<int?> Function(ExportHistory, String)? syncHistory,
+  bool realSync = false,
 }) async {
   // The screen resolves a device id for the history log through
   // SharedPreferences, which has no binding under `flutter test`. Seeded here
@@ -112,7 +113,10 @@ Future<void> pumpHome(
         // channel, which throws MissingPluginException under flutter test.
         share: share ?? RecordingShare(),
         history: history,
-        syncHistory: syncHistory,
+        // The screen syncs by itself on launch, so a suite that does not
+        // care about sync still gets a hermetic "not signed in" tick rather
+        // than the real one reaching the OS keystore.
+        syncHistory: realSync ? null : syncHistory ?? notSignedIn,
       ),
     ),
   );
@@ -121,6 +125,9 @@ Future<void> pumpHome(
   );
   await tester.pump();
 }
+
+/// A sync tick for a device nobody has signed in on.
+Future<int?> notSignedIn(ExportHistory _, String _) async => null;
 
 /// Runs [action] with real async work allowed, then pumps a frame.
 Future<void> actAsync(

@@ -2,11 +2,8 @@ import 'package:lyricanki/models/export_entry.dart';
 import 'package:lyricanki/models/track.dart';
 import 'package:lyricanki/screens/deck_flow.dart';
 import 'package:lyricanki/screens/export_detail_screen.dart';
-import 'package:lyricanki/screens/home_status.dart';
-import 'package:lyricanki/screens/sync_screen.dart';
 import 'package:lyricanki/services/deck_session.dart';
 import 'package:lyricanki/services/export_history.dart';
-import 'package:lyricanki/services/history_sync.dart';
 import 'package:lyricanki/services/pipeline/deck_builder.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -38,54 +35,6 @@ mixin SongSearchHistory<T extends StatefulWidget> on State<T> {
 
   /// Re-reads the visible rows after anything changes them.
   void refreshHistory();
-
-  /// This install's sync id.
-  String get deviceId;
-
-  /// Merges the history with the other devices', or null when this device is
-  /// not signed in.
-  Future<int?> runSync(ExportHistory history, String deviceId);
-
-  /// Shows [status] in the home screen's app bar; null clears it.
-  void showStatus(HomeStatus? status);
-
-  /// Merges this device's history with every other device's.
-  ///
-  /// Manual by design: the list renders from the local log, so a network tick
-  /// is never on the path that paints the home screen -- the reported bug
-  /// cannot come back as a timeout.
-  Future<void> syncNow() async {
-    final store = history;
-    if (store == null) return;
-    showStatus(const HomeStatus(HomeStatusKind.syncing));
-    try {
-      final count = await runSync(store, deviceId);
-      if (!mounted) return;
-      if (count == null) {
-        // Not being set up is a normal state, not an error -- offer the way
-        // in rather than reporting a failure.
-        showStatus(null);
-        await Navigator.of(context).push<void>(
-          MaterialPageRoute<void>(builder: (_) => const SyncScreen()),
-        );
-        return;
-      }
-      showStatus(HomeStatus(HomeStatusKind.synced, count: count));
-      refreshHistory();
-    } on HistorySyncLocked {
-      // Nothing was pulled or pushed. The lock button asks for the shared
-      // passphrase and syncs again once it is saved.
-      if (mounted) {
-        showStatus(HomeStatus(HomeStatusKind.locked, onUnlock: syncNow));
-      }
-    } on Exception catch (error) {
-      // Offline, or a rejected token. The local history is untouched and the
-      // app keeps working, so this is a glyph rather than a crash.
-      if (mounted) {
-        showStatus(HomeStatus(HomeStatusKind.failed, detail: '$error'));
-      }
-    }
-  }
 
   /// Opens the detail screen for [entry].
   Future<void> openEntry(ExportEntry entry) async {

@@ -115,7 +115,7 @@ void main() {
           return 1;
         },
       );
-      await tester.tap(find.byIcon(Icons.sync));
+      // The launch tick hits the lock by itself; no tap needed.
       await tester.pumpAndSettle();
 
       // A lock, not a failure: nothing is broken, a key is missing.
@@ -161,7 +161,7 @@ void main() {
     writePack('${root.path}/packs/lyricanki-es.sqlite');
     final history = await seeded(tester, [_a]);
 
-    await pumpHome(tester, storeIn(root), history: history);
+    await pumpHome(tester, storeIn(root), history: history, realSync: true);
     await actAsync(tester, () => tester.tap(find.byIcon(Icons.sync)));
     await tester.pump();
 

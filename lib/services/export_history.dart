@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -27,6 +28,9 @@ class ExportHistory {
   ExportHistory(this._store);
 
   final LogStore _store;
+
+  final StreamController<void> _localWrites =
+      StreamController<void>.broadcast();
 
   /// Filename the log is persisted under.
   static const String fileName = 'export_history.json';
@@ -69,11 +73,19 @@ class ExportHistory {
   /// Fires after every change, so the list can re-derive itself.
   Stream<void> get changes => _store.changes;
 
+  /// Fires after each write made on this device, never after a merge: it
+  /// starts a background sync, and [changes] (fired by [replaceAll] too)
+  /// would make every sync schedule the next one, forever.
+  Stream<void> get localWrites => _localWrites.stream;
+
   /// The whole log, for handing to `syncLog`.
   Log snapshot() => _store.snapshot();
 
-  /// Swaps in a merged log after a sync tick.
-  Future<void> replaceAll(Log merged) => _store.replaceAll(merged);
+  /// Swaps in a merged log after a sync tick, merged with the log as it is
+  /// *now*: [merged] came from a snapshot taken before the network round
+  /// trip, so a write made meanwhile is not in it. The merge is idempotent.
+  Future<void> replaceAll(Log merged) =>
+      _store.replaceAll(mergeLogs(_store.snapshot(), merged));
 
   /// Every entry, newest export first, hidden rows included.
   ///
@@ -126,6 +138,7 @@ class ExportHistory {
         },
       ),
     );
+    _localWrites.add(null);
   }
 
   /// Hides or unhides [trackId], leaving the `.apkg` and the record alone.
@@ -141,6 +154,7 @@ class ExportHistory {
         },
       ),
     );
+    _localWrites.add(null);
   }
 
   ExportEntry _toEntry(Record record) => ExportEntry(

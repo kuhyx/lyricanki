@@ -8,6 +8,7 @@ import 'package:lyricanki/screens/home_app_bar.dart';
 import 'package:lyricanki/screens/home_status.dart';
 import 'package:lyricanki/screens/pack_screen.dart';
 import 'package:lyricanki/screens/song_search_history.dart';
+import 'package:lyricanki/screens/song_search_sync.dart';
 import 'package:lyricanki/screens/track_picker_screen.dart';
 import 'package:lyricanki/services/apkg_share.dart';
 import 'package:lyricanki/services/deck_session.dart';
@@ -61,7 +62,10 @@ class SongSearchScreen extends StatefulWidget {
 }
 
 class _SongSearchScreenState extends State<SongSearchScreen>
-    with SongSearchHistory<SongSearchScreen> {
+    with
+        WidgetsBindingObserver,
+        SongSearchSync<SongSearchScreen>,
+        SongSearchHistory<SongSearchScreen> {
   late final LrclibClient _client = widget.client ?? LrclibClient();
   late final PackStore _store = widget.store ?? PackStore();
   late final ExportDestination _destination =
@@ -137,6 +141,7 @@ class _SongSearchScreenState extends State<SongSearchScreen>
       _history = history;
       _entries = history.visible();
     });
+    startAutoSync(history);
   }
 
   Future<void> _refreshPack() async {
