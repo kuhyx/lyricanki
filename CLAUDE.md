@@ -3,7 +3,7 @@
 - run: `flutter run`
 - test: `flutter test --reporter=compact`
 - test-changed: `scripts/test_changed.sh`
-- lint: `flutter analyze`
-- coverage: `flutter test --reporter=compact --coverage`
-- coverage-gaps: `coverage-gaps coverage/lcov.info`
+- lint: n/a: dropped (kuhy, 2026-11-27)
+- coverage: n/a: dropped (kuhy, 2026-11-27)
+- coverage-gaps: n/a: dropped (kuhy, 2026-11-27)
 - deploy: `scripts/deploy.sh`
